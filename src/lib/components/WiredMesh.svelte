@@ -14,14 +14,18 @@
 	let webglSupported = $state(true);
 
 	let wireMat: MeshBasicMaterial | undefined;
+	let innerMat: MeshBasicMaterial | undefined;
 	let ringMat: LineBasicMaterial | undefined;
+	let ring2Mat: LineBasicMaterial | undefined;
 	let pointsMat: PointsMaterial | undefined;
 	let renderOnce: (() => void) | undefined;
 
 	$effect(() => {
 		const isDark = theme === 'dark';
 		if (wireMat) wireMat.color.set(isDark ? 0x9dc19e : 0x3e5b41);
+		if (innerMat) innerMat.color.set(isDark ? 0xddf0e4 : 0x171a15);
 		if (ringMat) ringMat.color.set(isDark ? 0x667863 : 0x758271);
+		if (ring2Mat) ring2Mat.color.set(isDark ? 0x9dc19e : 0x3e5b41);
 		if (pointsMat) pointsMat.color.set(isDark ? 0xddf0e4 : 0x2c422e);
 		renderOnce?.();
 	});
@@ -63,8 +67,8 @@
 
 			const isDarkInit = theme === 'dark';
 
-			// Wireframe icosahedron terinspirasi node jaringan The Wired
-			const icoGeo = new THREE.IcosahedronGeometry(1.25, 1);
+			// Wireframe icosahedron luar + inti octahedron dalam
+			const icoGeo = new THREE.IcosahedronGeometry(1.28, 1);
 			wireMat = new THREE.MeshBasicMaterial({
 				color: isDarkInit ? 0x9dc19e : 0x3e5b41,
 				wireframe: true,
@@ -74,7 +78,17 @@
 			const ico = new THREE.Mesh(icoGeo, wireMat);
 			group.add(ico);
 
-			// Cincin orbit tipis
+			const innerGeo = new THREE.OctahedronGeometry(0.62, 0);
+			innerMat = new THREE.MeshBasicMaterial({
+				color: isDarkInit ? 0xddf0e4 : 0x171a15,
+				wireframe: true,
+				transparent: true,
+				opacity: 0.72
+			});
+			const innerCore = new THREE.Mesh(innerGeo, innerMat);
+			group.add(innerCore);
+
+			// Dua cincin orbit bersilangan
 			const ringPoints = [];
 			for (let i = 0; i <= 72; i++) {
 				const angle = (i / 72) * Math.PI * 2;
@@ -90,6 +104,16 @@
 			ring.rotation.x = Math.PI * 0.34;
 			ring.rotation.y = Math.PI * 0.14;
 			group.add(ring);
+
+			ring2Mat = new THREE.LineBasicMaterial({
+				color: isDarkInit ? 0x9dc19e : 0x3e5b41,
+				transparent: true,
+				opacity: 0.35
+			});
+			const ring2 = new THREE.LineLoop(ringGeo, ring2Mat);
+			ring2.rotation.x = -Math.PI * 0.28;
+			ring2.rotation.y = -Math.PI * 0.38;
+			group.add(ring2);
 
 			// Node partikel deterministik di sekitar mesh
 			const particleCount = 48;
@@ -159,7 +183,10 @@
 				if (!paused && inViewport) {
 					ico.rotation.y += dt * 0.28;
 					ico.rotation.x += dt * 0.14;
+					innerCore.rotation.y -= dt * 0.55;
+					innerCore.rotation.z += dt * 0.32;
 					ring.rotation.z -= dt * 0.16;
+					ring2.rotation.z += dt * 0.22;
 					points.rotation.y -= dt * 0.1;
 					group.rotation.x += (targetX - group.rotation.x) * 0.05;
 					group.rotation.y += (targetY - group.rotation.y) * 0.05;
@@ -179,9 +206,12 @@
 				io.disconnect();
 				container?.removeEventListener('pointermove', onPointerMove);
 				icoGeo.dispose();
+				innerGeo.dispose();
 				wireMat?.dispose();
+				innerMat?.dispose();
 				ringGeo.dispose();
 				ringMat?.dispose();
+				ring2Mat?.dispose();
 				pointsGeo.dispose();
 				pointsMat?.dispose();
 				renderer.dispose();

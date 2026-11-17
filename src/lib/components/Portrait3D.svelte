@@ -31,14 +31,13 @@
 			const cx = rect.left + rect.width / 2;
 			const cy = rect.top + rect.height / 2;
 
-			// Normalisasi jarak kursor terhadap pusat foto agar tetap mengikuti kursor di sekitar section
-			const dx = Math.max(-1, Math.min(1, (event.clientX - cx) / (rect.width * 1.15)));
-			const dy = Math.max(-1, Math.min(1, (event.clientY - cy) / (rect.height * 1.15)));
+			const dx = Math.max(-1, Math.min(1, (event.clientX - cx) / (rect.width * 1.1)));
+			const dy = Math.max(-1, Math.min(1, (event.clientY - cy) / (rect.height * 1.1)));
 
-			targetX = -dy * 12;
-			targetY = dx * 12;
-			targetGlareX = 50 + dx * 35;
-			targetGlareY = 50 + dy * 35;
+			targetX = -dy * 16;
+			targetY = dx * 16;
+			targetGlareX = 50 + dx * 38;
+			targetGlareY = 50 + dy * 38;
 			active = true;
 		};
 
@@ -55,10 +54,10 @@
 
 		const tick = () => {
 			rafId = requestAnimationFrame(tick);
-			rotX += (targetX - rotX) * 0.1;
-			rotY += (targetY - rotY) * 0.1;
-			glareX += (targetGlareX - glareX) * 0.1;
-			glareY += (targetGlareY - glareY) * 0.1;
+			rotX += (targetX - rotX) * 0.12;
+			rotY += (targetY - rotY) * 0.12;
+			glareX += (targetGlareX - glareX) * 0.12;
+			glareY += (targetGlareY - glareY) * 0.12;
 		};
 		rafId = requestAnimationFrame(tick);
 
@@ -71,29 +70,55 @@
 </script>
 
 <div class="w-full max-w-[420px] lg:w-[420px] lg:shrink-0">
-	<div bind:this={frame} class="perspective-[950px]">
+	<div bind:this={frame} class="perspective-[900px]">
 		<div
-			class="relative aspect-square w-full overflow-hidden border border-line bg-surface transition-shadow duration-300"
+			class="relative aspect-square w-full border border-line bg-surface transition-shadow duration-300"
 			style="transform: rotateX({rotX.toFixed(2)}deg) rotateY({rotY.toFixed(
 				2
-			)}deg); transform-style: preserve-3d; box-shadow: {(-rotY * 1.4).toFixed(1)}px {(
-				rotX * 1.4 +
-				10
-			).toFixed(1)}px 28px rgba(0, 0, 0, {active ? 0.28 : 0.14});"
+			)}deg); transform-style: preserve-3d; box-shadow: {(-rotY * 1.8).toFixed(1)}px {(
+				rotX * 1.8 +
+				14
+			).toFixed(1)}px 36px rgba(0, 0, 0, {active ? 0.36 : 0.16});"
 		>
-			<img {src} {alt} width="736" height="736" loading="lazy" class="h-full w-full object-cover" />
+			<!-- Lapisan kedalaman 3D di belakang foto -->
+			<div
+				aria-hidden="true"
+				class="pointer-events-none absolute -inset-2 border border-primary/35"
+				style="transform: translateZ(-22px);"
+			></div>
+
+			<img
+				{src}
+				{alt}
+				width="736"
+				height="736"
+				loading="lazy"
+				class="relative z-10 h-full w-full object-cover"
+				style="transform: translateZ(12px);"
+			/>
 
 			<div
 				aria-hidden="true"
-				class="pointer-events-none absolute inset-0 transition-opacity duration-300"
-				style="opacity: {active ? 0.22 : 0}; background: radial-gradient(circle at {glareX.toFixed(
+				class="pointer-events-none absolute inset-0 z-20 transition-opacity duration-300"
+				style="transform: translateZ(18px); opacity: {active
+					? 0.24
+					: 0}; background: radial-gradient(circle at {glareX.toFixed(1)}% {glareY.toFixed(
 					1
-				)}% {glareY.toFixed(1)}%, var(--primary), transparent 62%);"
+				)}%, var(--primary), transparent 60%);"
 			></div>
+
+			<!-- Label mengambang di kedalaman 3D -->
+			<div
+				aria-hidden="true"
+				class="pointer-events-none absolute right-3 bottom-3 z-30 border border-control-line bg-bg/90 px-2.5 py-1 font-mono text-[10px] text-primary"
+				style="transform: translateZ(34px);"
+			>
+				@lemondeft · 3d
+			</div>
 		</div>
 	</div>
 
-	<p class="mt-4 font-mono text-xs text-muted">
+	<p class="mt-5 font-mono text-xs text-muted">
 		{caption}
 	</p>
 </div>

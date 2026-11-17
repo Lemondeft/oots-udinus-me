@@ -3,7 +3,8 @@
 	import { animate, scroll } from 'motion';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import { reveal, springTap } from '$lib/actions/reveal';
+	import { flashlight, reveal, springTap, tilt3d } from '$lib/actions/reveal';
+	import AlgorithmicArt from '$lib/components/AlgorithmicArt.svelte';
 	import DailyDriver from '$lib/components/DailyDriver.svelte';
 	import Portrait3D from '$lib/components/Portrait3D.svelte';
 	import ProjectRow from '$lib/components/ProjectRow.svelte';
@@ -20,6 +21,7 @@
 	let status: Status = $state('idle');
 	let menuOpen: boolean = $state(false);
 	let progressBar: HTMLDivElement | undefined = $state();
+	let bannerLight = $state({ x: 50, y: 50, active: false });
 
 	$effect(() => {
 		document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -279,7 +281,11 @@
 		<!-- Banner Lain (dipakai di tema gelap dan tema terang) -->
 		<section aria-label="Banner ilustrasi" class="border-t border-line">
 			<div class="mx-auto max-w-[1280px] px-6 py-12 lg:px-20 lg:py-20">
-				<div class="aspect-[3/1] w-full overflow-hidden border border-line bg-surface">
+				<div
+					use:tilt3d={3.5}
+					use:flashlight={(next) => (bannerLight = next)}
+					class="relative aspect-[3/1] w-full overflow-hidden border border-line bg-surface"
+				>
 					<img
 						src="/images/banner.jpg"
 						alt="Banner ilustrasi Serial Experiments Lain di dalam kereta"
@@ -288,6 +294,17 @@
 						fetchpriority="high"
 						class="h-full w-full object-cover"
 					/>
+					<div
+						aria-hidden="true"
+						class="pointer-events-none absolute inset-0 transition-opacity duration-300"
+						style="opacity: {bannerLight.active
+							? 1
+							: 0}; background: radial-gradient(280px circle at {bannerLight.x.toFixed(
+							1
+						)}% {bannerLight.y.toFixed(
+							1
+						)}%, rgba(221, 240, 228, 0.28), rgba(10, 10, 10, 0.35) 68%);"
+					></div>
 				</div>
 				<p class="mt-4 font-mono text-xs text-muted">
 					banner · serial experiments lain · aksen palet sage &amp; lumut
@@ -383,7 +400,25 @@
 				</div>
 
 				<div use:reveal={80} class="mt-20 border-t border-line pt-16 lg:mt-28 lg:pt-20">
-					<DailyDriver />
+					<div use:tilt3d={3}>
+						<DailyDriver />
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Seni Algoritmik -->
+		<section id="eksperimen" class="border-t border-line">
+			<div class="mx-auto max-w-[1280px] px-6 py-20 lg:px-20 lg:py-32">
+				<div use:reveal={0} class="flex flex-col gap-3">
+					<p class="font-mono text-xs text-primary">$ ./wired_resonance --seed</p>
+					<h2 class="font-display text-2xl font-semibold tracking-tight text-ink lg:text-4xl">
+						Seni Algoritmik
+					</h2>
+				</div>
+
+				<div use:reveal={80} class="mt-12 lg:mt-16">
+					<AlgorithmicArt {theme} />
 				</div>
 			</div>
 		</section>
