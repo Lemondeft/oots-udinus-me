@@ -391,7 +391,8 @@
 						<div class="flex flex-col divide-y divide-line border-t border-b border-line">
 							<a
 								href="mailto:{profile.links.email}"
-								rel="external"
+								target="_blank"
+								rel="external noopener noreferrer"
 								class="flex min-h-[48px] items-center justify-between gap-4 py-3 font-mono text-xs text-ink transition-colors duration-200 hover:text-primary"
 							>
 								<span class="text-muted">Email</span>
@@ -610,7 +611,8 @@
 				</a>
 				<a
 					href="mailto:{profile.links.email}"
-					rel="external"
+					target="_blank"
+					rel="external noopener noreferrer"
 					class="inline-flex min-h-[44px] items-center font-mono text-xs text-primary transition-colors duration-200 hover:underline"
 				>
 					{profile.links.email}
