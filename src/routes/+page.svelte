@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { animate, scroll } from 'motion';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import { reveal } from '$lib/actions/reveal';
+	import { reveal, springTap } from '$lib/actions/reveal';
 	import DailyDriver from '$lib/components/DailyDriver.svelte';
 	import ProjectRow from '$lib/components/ProjectRow.svelte';
+	import WiredMesh from '$lib/components/WiredMesh.svelte';
 	import { profile, projects } from '$lib/data';
 	import type { PageProps } from './$types';
 
@@ -15,9 +18,15 @@
 	let theme: Theme = $state('dark');
 	let status: Status = $state('idle');
 	let menuOpen: boolean = $state(false);
+	let progressBar: HTMLDivElement | undefined = $state();
 
 	$effect(() => {
 		document.documentElement.classList.toggle('dark', theme === 'dark');
+	});
+
+	onMount(() => {
+		if (!progressBar || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		return scroll(animate(progressBar, { scaleX: [0, 1] }, { ease: 'linear' }));
 	});
 </script>
 
@@ -30,6 +39,11 @@
 <div
 	class="min-h-dvh bg-bg text-ink transition-colors duration-200 {theme === 'dark' ? 'dark' : ''}"
 >
+	<div
+		bind:this={progressBar}
+		aria-hidden="true"
+		class="pointer-events-none fixed top-0 right-0 left-0 z-30 h-[2px] origin-left scale-x-0 bg-primary"
+	></div>
 	<!-- Navigasi -->
 	<header class="relative border-b border-line bg-bg">
 		<div
@@ -196,58 +210,68 @@
 	<main>
 		<!-- Hero -->
 		<section class="mx-auto max-w-[1280px] px-6 pt-20 pb-16 lg:px-20 lg:pt-32 lg:pb-24">
-			<div class="flex max-w-[920px] flex-col gap-8 lg:gap-10">
-				<p class="font-mono text-xs text-primary lg:text-sm">$ whoami</p>
+			<div
+				class="grid grid-cols-1 items-center gap-14 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)] lg:gap-16"
+			>
+				<div class="flex min-w-0 flex-col gap-8 lg:gap-10">
+					<p class="font-mono text-xs text-primary lg:text-sm">$ whoami</p>
 
-				<h1
-					class="font-display text-[clamp(2.25rem,5.8vw,4.75rem)] leading-[1.06] font-semibold tracking-tight text-ink"
-				>
-					{profile.name}
-				</h1>
+					<h1
+						class="font-display text-[clamp(2.25rem,5vw,4.25rem)] leading-[1.06] font-semibold tracking-tight text-ink"
+					>
+						{profile.name}
+					</h1>
 
-				<p class="max-w-[60ch] text-base leading-relaxed text-muted lg:text-lg">
-					{profile.heroIntro}
-				</p>
+					<p class="max-w-[60ch] text-base leading-relaxed text-muted lg:text-lg">
+						{profile.heroIntro}
+					</p>
 
-				<div class="flex flex-wrap items-center gap-4 pt-2">
-					<a
-						href="#proyek"
-						class="inline-flex h-12 items-center bg-primary px-6 text-sm font-medium text-on-primary transition-opacity duration-200 hover:opacity-90"
-					>
-						Lihat proyek
-					</a>
-					<a
-						href="#kontak"
-						class="inline-flex h-12 items-center border border-control-line bg-surface px-6 text-sm text-ink transition-colors duration-200 hover:border-primary hover:text-primary"
-					>
-						Hubungi saya
-					</a>
-					<a
-						href={profile.links.blog}
-						target="_blank"
-						rel="external noopener noreferrer"
-						class="inline-flex h-12 items-center gap-2 border border-line px-5 font-mono text-xs text-muted transition-colors duration-200 hover:border-primary hover:text-primary"
-					>
-						<span>my-blog</span>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
+					<div class="flex flex-wrap items-center gap-4 pt-2">
+						<a
+							href="#proyek"
+							use:springTap
+							class="inline-flex h-12 items-center bg-primary px-6 text-sm font-medium text-on-primary transition-opacity duration-200 hover:opacity-90"
 						>
-							<path d="M7 17 17 7M9 7h8v8" />
-						</svg>
-					</a>
+							Lihat proyek
+						</a>
+						<a
+							href="#kontak"
+							use:springTap
+							class="inline-flex h-12 items-center border border-control-line bg-surface px-6 text-sm text-ink transition-colors duration-200 hover:border-primary hover:text-primary"
+						>
+							Hubungi saya
+						</a>
+						<a
+							href={profile.links.blog}
+							target="_blank"
+							rel="external noopener noreferrer"
+							class="inline-flex h-12 items-center gap-2 border border-line px-5 font-mono text-xs text-muted transition-colors duration-200 hover:border-primary hover:text-primary"
+						>
+							<span>my-blog</span>
+							<svg
+								width="13"
+								height="13"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M7 17 17 7M9 7h8v8" />
+							</svg>
+						</a>
+					</div>
+
+					<p class="pt-2 font-mono text-xs text-muted">
+						@{profile.handle} · {profile.role}
+					</p>
 				</div>
 
-				<p class="pt-2 font-mono text-xs text-muted">
-					@{profile.handle} · {profile.role}
-				</p>
+				<div class="w-full max-w-[460px] justify-self-center lg:max-w-none">
+					<WiredMesh {theme} />
+				</div>
 			</div>
 		</section>
 
