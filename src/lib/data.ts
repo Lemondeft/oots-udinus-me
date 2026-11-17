@@ -60,22 +60,22 @@ export const profile = {
 	bio: 'Saya belajar dengan langsung membangun dan merilis proyek nyata. Sebagian besar waktu saya dihabiskan untuk pengembangan web TypeScript, aplikasi mobile offline-first, dan ngoprek sistem Linux sambil mendalami machine learning.',
 	facts: [
 		{ label: 'Fokus', value: 'Web fullstack, mobile & otomasi' },
-		{ label: 'Stack utama', value: 'TypeScript · React · Svelte · Flutter · Postgres' },
+		{ label: 'Stack utama', value: 'TypeScript · React · Next.js · Flutter · Postgres' },
 		{ label: 'Lingkungan', value: 'Fedora 44 · Hyprland (Quickshell ii)' },
 		{ label: 'Lokasi', value: 'Indonesia' }
 	],
 	skillGroups: [
 		{
 			label: 'Dipakai sehari-hari',
-			items: ['TypeScript', 'JavaScript', 'React', 'Svelte', 'Node.js', 'Tailwind CSS']
+			items: ['TypeScript', 'JavaScript', 'React', 'Next.js', 'Node.js', 'Tailwind CSS']
 		},
 		{
 			label: 'Aktif dikerjakan',
-			items: ['Next.js', 'Flutter', 'Dart', 'Supabase', 'PostgreSQL', 'PHP']
+			items: ['Flutter', 'Dart', 'Supabase', 'PostgreSQL', 'PHP']
 		},
 		{
 			label: 'Eksplorasi & alat',
-			items: ['Python', 'Kotlin', 'Machine Learning', 'Fedora Linux', 'Docker', 'Git']
+			items: ['Svelte', 'Python', 'Kotlin', 'Machine Learning', 'Fedora Linux', 'Docker', 'Git']
 		}
 	],
 	driverSpecs: [
