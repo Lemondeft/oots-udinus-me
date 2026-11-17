@@ -5,6 +5,7 @@
 	import { resolve } from '$app/paths';
 	import { reveal, springTap } from '$lib/actions/reveal';
 	import DailyDriver from '$lib/components/DailyDriver.svelte';
+	import Portrait3D from '$lib/components/Portrait3D.svelte';
 	import ProjectRow from '$lib/components/ProjectRow.svelte';
 	import WiredMesh from '$lib/components/WiredMesh.svelte';
 	import { profile, projects } from '$lib/data';
@@ -336,20 +337,12 @@
 				</div>
 
 				<div class="mt-12 flex flex-col items-start gap-12 lg:mt-16 lg:flex-row lg:gap-20">
-					<div use:reveal={60} class="w-full max-w-[420px] lg:w-[420px] lg:shrink-0">
-						<div class="aspect-square w-full overflow-hidden border border-line bg-surface">
-							<img
-								src="/images/portrait.jpg"
-								alt="Foto profil ilustrasi untuk Ahmad Rizki Maulana"
-								width="736"
-								height="736"
-								loading="lazy"
-								class="h-full w-full object-cover"
-							/>
-						</div>
-						<p class="mt-4 font-mono text-xs text-muted">
-							@{profile.handle} · {profile.name}
-						</p>
+					<div use:reveal={60}>
+						<Portrait3D
+							src="/images/portrait.jpg"
+							alt="Foto profil ilustrasi untuk Ahmad Rizki Maulana"
+							caption="@{profile.handle} · {profile.name}"
+						/>
 					</div>
 
 					<div use:reveal={120} class="flex w-full flex-1 flex-col gap-10">
