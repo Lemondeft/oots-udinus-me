@@ -54,9 +54,9 @@ export const projects: Project[] = [
 export const profile = {
 	handle: 'lemondeft',
 	name: 'Ahmad Rizki Maulana',
-	role: 'Fullstack Developer · Siswa SMK RPL',
+	role: 'Fullstack Developer · Siswa SMK PPLG',
 	heroIntro:
-		'Siswa SMK jurusan RPL di Indonesia yang berfokus membangun aplikasi web fullstack dengan TypeScript, aplikasi mobile dengan Flutter dan Supabase, serta otomasi alur kerja.',
+		'Siswa SMK jurusan PPLG di Indonesia yang berfokus membangun aplikasi web fullstack dengan TypeScript, aplikasi mobile dengan Flutter dan Supabase, serta otomasi alur kerja.',
 	bio: 'Saya belajar dengan langsung membangun dan merilis proyek nyata. Sebagian besar waktu saya dihabiskan untuk pengembangan web TypeScript, aplikasi mobile offline-first, dan ngoprek sistem Linux sambil mendalami machine learning.',
 	facts: [
 		{ label: 'Fokus', value: 'Web fullstack, mobile & otomasi' },
