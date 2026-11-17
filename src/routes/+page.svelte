@@ -1,35 +1,83 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { projects, profile } from '$lib/data';
+	import { resolve } from '$app/paths';
+	import { reveal } from '$lib/actions/reveal';
+	import DailyDriver from '$lib/components/DailyDriver.svelte';
 	import ProjectRow from '$lib/components/ProjectRow.svelte';
+	import { profile, projects } from '$lib/data';
+	import type { PageProps } from './$types';
 
 	type Theme = 'light' | 'dark';
 	type Status = 'idle' | 'loading' | 'success' | 'error';
 
-	let theme: Theme = $state('light');
+	let { form }: PageProps = $props();
+
+	let theme: Theme = $state('dark');
 	let status: Status = $state('idle');
+	let menuOpen: boolean = $state(false);
+
+	$effect(() => {
+		document.documentElement.classList.toggle('dark', theme === 'dark');
+	});
 </script>
 
-<div class="min-h-dvh bg-bg text-ink {theme === 'dark' ? 'dark' : ''}">
-	<!-- nav -->
-	<header class="border-b border-line">
-		<div
-			class="mx-auto flex h-[60px] max-w-[1440px] items-center justify-between px-6 lg:h-[72px] lg:px-24"
-		>
-			<a href="/" class="text-[15px] font-semibold lg:text-base">nama.kamu</a>
+<svelte:window
+	onkeydown={(event) => {
+		if (event.key === 'Escape') menuOpen = false;
+	}}
+/>
 
-			<div class="flex items-center gap-2 lg:gap-8">
-				<nav class="hidden items-center gap-7 lg:flex">
-					<a href="#proyek" class="text-sm text-muted">Proyek</a>
-					<a href="#tentang" class="text-sm text-muted">Tentang</a>
-					<a href="#kontak" class="text-sm text-muted">Kontak</a>
+<div
+	class="min-h-dvh bg-bg text-ink transition-colors duration-200 {theme === 'dark' ? 'dark' : ''}"
+>
+	<!-- Navigasi -->
+	<header class="relative border-b border-line bg-bg">
+		<div
+			class="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6 lg:h-20 lg:px-20"
+		>
+			<a
+				href={resolve('/')}
+				class="inline-flex min-h-[44px] items-center font-display text-sm font-semibold tracking-wide text-ink lg:text-base"
+			>
+				{profile.handle}
+			</a>
+
+			<div class="flex items-center gap-3 lg:gap-8">
+				<nav aria-label="Navigasi utama" class="hidden items-center gap-8 lg:flex">
+					<a
+						href="#proyek"
+						class="inline-flex min-h-[44px] items-center text-sm text-muted transition-colors duration-200 hover:text-primary"
+					>
+						Proyek
+					</a>
+					<a
+						href="#tentang"
+						class="inline-flex min-h-[44px] items-center text-sm text-muted transition-colors duration-200 hover:text-primary"
+					>
+						Tentang
+					</a>
+					<a
+						href="#kontak"
+						class="inline-flex min-h-[44px] items-center text-sm text-muted transition-colors duration-200 hover:text-primary"
+					>
+						Kontak
+					</a>
+					<a
+						href={profile.links.blog}
+						target="_blank"
+						rel="external noopener noreferrer"
+						class="inline-flex min-h-[44px] items-center font-mono text-xs text-primary transition-colors duration-200 hover:underline"
+					>
+						my-blog
+					</a>
 				</nav>
 
 				<button
 					type="button"
-					aria-label="Ganti tema"
+					aria-label={theme === 'dark' ? 'Ubah ke tema terang' : 'Ubah ke tema gelap'}
+					aria-pressed={theme === 'dark'}
 					onclick={() => (theme = theme === 'dark' ? 'light' : 'dark')}
-					class="flex h-11 w-11 items-center justify-center border border-line"
+					class="flex h-11 w-11 items-center justify-center border border-control-line bg-surface text-ink transition-colors duration-200 hover:border-primary hover:text-primary"
 				>
 					<svg
 						width="17"
@@ -40,6 +88,7 @@
 						stroke-width="1.5"
 						stroke-linecap="round"
 						stroke-linejoin="round"
+						aria-hidden="true"
 						class="dark:hidden"
 					>
 						<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
@@ -52,6 +101,7 @@
 						stroke="currentColor"
 						stroke-width="1.5"
 						stroke-linecap="round"
+						aria-hidden="true"
 						class="hidden dark:block"
 					>
 						<circle cx="12" cy="12" r="4" />
@@ -63,214 +113,378 @@
 
 				<button
 					type="button"
-					aria-label="Buka menu"
-					class="flex h-11 w-11 items-center justify-center border border-line lg:hidden"
+					aria-label={menuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+					aria-expanded={menuOpen}
+					aria-controls="menu-mobile"
+					onclick={() => (menuOpen = !menuOpen)}
+					class="inline-flex h-11 items-center gap-2 border border-control-line bg-surface px-3.5 font-mono text-xs text-ink transition-colors duration-200 hover:border-primary hover:text-primary lg:hidden"
 				>
+					<span>{menuOpen ? 'Tutup' : 'Menu'}</span>
 					<svg
-						width="18"
-						height="18"
+						width="16"
+						height="16"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
 						stroke-width="1.5"
 						stroke-linecap="round"
+						aria-hidden="true"
+						class={menuOpen ? 'hidden' : 'block'}
 					>
 						<path d="M4 7h16M4 12h16M4 17h16" />
+					</svg>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						aria-hidden="true"
+						class={menuOpen ? 'block' : 'hidden'}
+					>
+						<path d="M6 6l12 12M18 6L6 18" />
 					</svg>
 				</button>
 			</div>
 		</div>
-	</header>
 
-	<!-- hero -->
-	<section class="mx-auto max-w-[1440px] px-6 pt-16 pb-14 lg:px-24 lg:pt-[120px]">
-		<h1
-			class="text-[62px] leading-[0.88] font-medium tracking-[-1.6px] lg:text-[232px] lg:tracking-[-9px]"
+		<!-- Panel menu mobile absolute agar membuka menu tidak menggeser target scroll Lenis -->
+		<nav
+			id="menu-mobile"
+			aria-label="Navigasi mobile"
+			class="absolute inset-x-0 top-full z-20 border-b border-line bg-surface shadow-xl lg:hidden {menuOpen
+				? 'block'
+				: 'hidden'}"
 		>
-			Nama Kamu
-		</h1>
-
-		<div class="mt-7 flex flex-col gap-6">
-			<p class="max-w-[560px] text-[17px] leading-[1.6] text-muted lg:text-xl">
-				Siswa SMK jurusan RPL. Membangun antarmuka web yang cepat, rapi, dan mudah dipakai.
-			</p>
-
-			<div class="flex items-center gap-3">
+			<div class="mx-auto flex max-w-[1280px] flex-col divide-y divide-line px-6">
 				<a
 					href="#proyek"
-					class="flex h-12 items-center bg-primary px-6 text-[15px] font-medium text-on-primary"
+					onclick={() => (menuOpen = false)}
+					class="flex min-h-[48px] items-center text-sm text-muted hover:text-primary"
 				>
-					Lihat proyek
+					Proyek
+				</a>
+				<a
+					href="#tentang"
+					onclick={() => (menuOpen = false)}
+					class="flex min-h-[48px] items-center text-sm text-muted hover:text-primary"
+				>
+					Tentang
 				</a>
 				<a
 					href="#kontak"
-					class="flex h-12 items-center border border-line px-6 text-[15px] text-ink"
+					onclick={() => (menuOpen = false)}
+					class="flex min-h-[48px] items-center text-sm text-muted hover:text-primary"
 				>
-					Hubungi saya
+					Kontak
+				</a>
+				<a
+					href={profile.links.blog}
+					target="_blank"
+					rel="external noopener noreferrer"
+					onclick={() => (menuOpen = false)}
+					class="flex min-h-[48px] items-center font-mono text-xs text-primary"
+				>
+					Baca my-blog
 				</a>
 			</div>
+		</nav>
+	</header>
 
-			<p class="font-mono text-[11px] tracking-[1.1px] text-muted">
-				TERSEDIA UNTUK PROYEK BARU — 2026
-			</p>
-		</div>
-	</section>
+	<main>
+		<!-- Hero -->
+		<section class="mx-auto max-w-[1280px] px-6 pt-20 pb-16 lg:px-20 lg:pt-32 lg:pb-24">
+			<div class="flex max-w-[920px] flex-col gap-8 lg:gap-10">
+				<p class="font-mono text-xs text-primary lg:text-sm">$ whoami</p>
 
-	<!-- band -->
-	<div class="border-t border-line">
-		<img
-			src={theme === 'dark' ? '/images/band-dark.png' : '/images/band-light.png'}
-			alt="Foto kegiatan lab RPL"
-			class="h-[220px] w-full object-cover lg:h-[420px]"
-		/>
-		<div class="mx-auto max-w-[1440px] px-6 py-4 lg:px-24">
-			<p class="font-mono text-[11px] tracking-[1.1px] text-muted">LAB RPL — SMK NEGERI 1 · 2026</p>
-		</div>
-	</div>
+				<h1
+					class="font-display text-[clamp(2.25rem,5.8vw,4.75rem)] leading-[1.06] font-semibold tracking-tight text-ink"
+				>
+					{profile.name}
+				</h1>
 
-	<!-- proyek -->
-	<section id="proyek" class="border-t border-line">
-		<div class="mx-auto max-w-[1440px] px-6 pt-5 pb-14 lg:px-24 lg:pb-24">
-			<p class="font-mono text-[11px] tracking-[1.1px]">PROYEK</p>
+				<p class="max-w-[60ch] text-base leading-relaxed text-muted lg:text-lg">
+					{profile.heroIntro}
+				</p>
 
-			<div class="mt-7 flex flex-col divide-y divide-line lg:mt-10">
-				{#each projects as project, i (project.title)}
-					<ProjectRow {project} index={i} />
-				{/each}
+				<div class="flex flex-wrap items-center gap-4 pt-2">
+					<a
+						href="#proyek"
+						class="inline-flex h-12 items-center bg-primary px-6 text-sm font-medium text-on-primary transition-opacity duration-200 hover:opacity-90"
+					>
+						Lihat proyek
+					</a>
+					<a
+						href="#kontak"
+						class="inline-flex h-12 items-center border border-control-line bg-surface px-6 text-sm text-ink transition-colors duration-200 hover:border-primary hover:text-primary"
+					>
+						Hubungi saya
+					</a>
+					<a
+						href={profile.links.blog}
+						target="_blank"
+						rel="external noopener noreferrer"
+						class="inline-flex h-12 items-center gap-2 border border-line px-5 font-mono text-xs text-muted transition-colors duration-200 hover:border-primary hover:text-primary"
+					>
+						<span>my-blog</span>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M7 17 17 7M9 7h8v8" />
+						</svg>
+					</a>
+				</div>
+
+				<p class="pt-2 font-mono text-xs text-muted">
+					@{profile.handle} · {profile.role}
+				</p>
 			</div>
-		</div>
-	</section>
+		</section>
 
-	<!-- tentang -->
-	<section id="tentang" class="border-t border-line">
-		<div class="mx-auto max-w-[1440px] px-6 pt-5 pb-14 lg:px-24 lg:pb-24">
-			<p class="font-mono text-[11px] tracking-[1.1px]">TENTANG</p>
+		<!-- Banner Lain (dipakai di tema gelap dan tema terang) -->
+		<section aria-label="Banner ilustrasi" class="border-t border-line">
+			<div class="mx-auto max-w-[1280px] px-6 py-12 lg:px-20 lg:py-20">
+				<div class="aspect-[3/1] w-full overflow-hidden border border-line bg-surface">
+					<img
+						src="/images/banner.jpg"
+						alt="Banner ilustrasi Serial Experiments Lain di dalam kereta"
+						width="734"
+						height="245"
+						fetchpriority="high"
+						class="h-full w-full object-cover"
+					/>
+				</div>
+				<p class="mt-4 font-mono text-xs text-muted">
+					banner · serial experiments lain · aksen palet sage &amp; lumut
+				</p>
+			</div>
+		</section>
 
-			<div class="mt-7 flex flex-col items-start gap-8 lg:mt-10 lg:flex-row lg:gap-24">
-				<img
-					src={theme === 'dark' ? '/images/portrait-dark.png' : '/images/portrait-light.png'}
-					alt="Foto profil"
-					class="h-[428px] w-full object-cover lg:h-[525px] lg:w-[420px]"
-				/>
-
-				<div class="flex w-full flex-col gap-7">
-					<p class="max-w-[520px] text-[17px] leading-[1.6] text-muted lg:text-xl">
-						{profile.bio}
-					</p>
-
-					<div class="flex flex-col divide-y divide-line">
-						{#each profile.facts as fact}
-							<div class="flex items-center justify-between gap-8 py-4">
-								<span class="font-mono text-[11px] tracking-[1.1px] text-muted">
-									{fact.label}
-								</span>
-								<span class="text-[15px]">{fact.value}</span>
-							</div>
-						{/each}
+		<!-- Proyek -->
+		<section id="proyek" class="border-t border-line">
+			<div class="mx-auto max-w-[1280px] px-6 py-20 lg:px-20 lg:py-32">
+				<div use:reveal={0} class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+					<div class="flex flex-col gap-3">
+						<p class="font-mono text-xs text-primary">$ ls proyek</p>
+						<h2 class="font-display text-2xl font-semibold tracking-tight text-ink lg:text-4xl">
+							Proyek Pilihan
+						</h2>
 					</div>
 
-					<div class="flex flex-col gap-3">
-						<span class="font-mono text-[11px] tracking-[1.1px] text-muted">KEAHLIAN</span>
-						<div class="flex flex-wrap gap-2">
-							{#each profile.skills as skill}
-								<span
-									class="border border-line px-2.5 py-[7px] font-mono text-[11px] tracking-[1.1px] text-muted"
+					<a
+						href={profile.links.github}
+						target="_blank"
+						rel="external noopener noreferrer"
+						class="inline-flex min-h-[44px] items-center font-mono text-xs text-muted transition-colors duration-200 hover:text-primary"
+					>
+						Semua repositori di github.com/Lemondeft
+					</a>
+				</div>
+
+				<div
+					class="mt-12 flex flex-col divide-y divide-line border-t border-b border-line lg:mt-16"
+				>
+					{#each projects as project, i (project.title)}
+						<ProjectRow {project} index={i} />
+					{/each}
+				</div>
+			</div>
+		</section>
+
+		<!-- Tentang -->
+		<section id="tentang" class="border-t border-line">
+			<div class="mx-auto max-w-[1280px] px-6 py-20 lg:px-20 lg:py-32">
+				<div use:reveal={0} class="flex flex-col gap-3">
+					<p class="font-mono text-xs text-primary">$ cat tentang.md</p>
+					<h2 class="font-display text-2xl font-semibold tracking-tight text-ink lg:text-4xl">
+						Tentang &amp; Stack
+					</h2>
+				</div>
+
+				<div class="mt-12 flex flex-col items-start gap-12 lg:mt-16 lg:flex-row lg:gap-20">
+					<div use:reveal={60} class="w-full max-w-[420px] lg:w-[420px] lg:shrink-0">
+						<div class="aspect-square w-full overflow-hidden border border-line bg-surface">
+							<img
+								src="/images/portrait.jpg"
+								alt="Foto profil ilustrasi untuk Ahmad Rizki Maulana"
+								width="736"
+								height="736"
+								loading="lazy"
+								class="h-full w-full object-cover"
+							/>
+						</div>
+						<p class="mt-4 font-mono text-xs text-muted">
+							@{profile.handle} · {profile.name}
+						</p>
+					</div>
+
+					<div use:reveal={120} class="flex w-full flex-1 flex-col gap-10">
+						<p class="max-w-[58ch] text-base leading-relaxed text-muted lg:text-lg">
+							{profile.bio}
+						</p>
+
+						<dl class="flex flex-col divide-y divide-line border-t border-b border-line">
+							{#each profile.facts as fact (fact.label)}
+								<div
+									class="flex flex-col justify-between gap-2 py-4 sm:flex-row sm:items-center sm:gap-8"
 								>
-									{skill}
-								</span>
+									<dt class="font-mono text-xs text-muted">
+										{fact.label}
+									</dt>
+									<dd class="text-sm text-ink sm:text-right">{fact.value}</dd>
+								</div>
+							{/each}
+						</dl>
+
+						<div class="flex flex-col gap-7">
+							{#each profile.skillGroups as group (group.label)}
+								<div class="flex flex-col gap-3">
+									<h3 class="font-mono text-xs text-muted">{group.label}</h3>
+									<div class="flex flex-wrap gap-2.5">
+										{#each group.items as item (item)}
+											<span
+												class="border border-line bg-surface px-3 py-1.5 font-mono text-xs text-ink"
+											>
+												{item}
+											</span>
+										{/each}
+									</div>
+								</div>
 							{/each}
 						</div>
 					</div>
 				</div>
+
+				<div use:reveal={80} class="mt-20 border-t border-line pt-16 lg:mt-28 lg:pt-20">
+					<DailyDriver />
+				</div>
 			</div>
-		</div>
-	</section>
+		</section>
 
-	<!-- kontak -->
-	<section id="kontak" class="border-t border-line">
-		<div class="mx-auto max-w-[1440px] px-6 pt-5 pb-14 lg:px-24 lg:pb-24">
-			<p class="font-mono text-[11px] tracking-[1.1px]">KONTAK</p>
+		<!-- Kontak -->
+		<section id="kontak" class="border-t border-line">
+			<div class="mx-auto max-w-[1280px] px-6 py-20 lg:px-20 lg:py-32">
+				<div use:reveal={0} class="flex flex-col gap-3">
+					<p class="font-mono text-xs text-primary">$ ping {profile.handle}</p>
+					<h2 class="font-display text-2xl font-semibold tracking-tight text-ink lg:text-4xl">
+						Hubungi Saya
+					</h2>
+				</div>
 
-			<div class="mt-7 flex flex-col gap-8 lg:mt-10 lg:flex-row lg:gap-24">
-				<p class="max-w-[420px] text-[17px] leading-[1.6] text-muted lg:text-xl">
-					Punya pertanyaan atau ingin bekerja sama? Kirim pesan.
-				</p>
+				<div class="mt-12 grid grid-cols-1 gap-14 lg:mt-16 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+					<div use:reveal={60} class="flex flex-col gap-8">
+						<p class="max-w-[46ch] text-base leading-relaxed text-muted lg:text-lg">
+							Punya pertanyaan soal proyek, kolaborasi, atau sekadar ingin berdiskusi? Kirim pesan
+							lewat formulir ini atau hubungi langsung lewat kanal di bawah.
+						</p>
 
-				<form
-					method="POST"
-					action="?/kirim"
-					use:enhance={() => {
-						status = 'loading';
-						return async ({ result, update }) => {
-							await update({ reset: result.type === 'success' });
-							status = result.type === 'success' ? 'success' : 'error';
-						};
-					}}
-					class="flex w-full flex-col gap-4 lg:w-[440px] lg:shrink-0"
-				>
-					<label class="flex flex-col gap-2">
-						<span class="font-mono text-[11px] tracking-[1.1px] text-muted">NAMA</span>
-						<input
-							name="nama"
-							required
-							autocomplete="name"
-							placeholder="Nama lengkap kamu"
-							class="h-12 w-full border border-line bg-bg px-3.5 text-[15px] outline-none placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary"
-						/>
-					</label>
-
-					<label class="flex flex-col gap-2">
-						<span class="font-mono text-[11px] tracking-[1.1px] text-muted">EMAIL</span>
-						<input
-							name="email"
-							type="email"
-							required
-							autocomplete="email"
-							placeholder="nama@email.com"
-							class="h-12 w-full border border-line bg-bg px-3.5 text-[15px] outline-none placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary"
-						/>
-					</label>
-
-					<label class="flex flex-col gap-2">
-						<span class="font-mono text-[11px] tracking-[1.1px] text-muted">PESAN</span>
-						<textarea
-							name="pesan"
-							required
-							rows="5"
-							placeholder="Tulis pesan kamu di sini"
-							class="min-h-[120px] w-full border border-line bg-bg px-3.5 py-3 text-[15px] outline-none placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary"
-						></textarea>
-					</label>
-
-					<button
-						type="submit"
-						disabled={status === 'loading'}
-						class="flex h-12 items-center justify-center gap-2 border px-6 text-[15px] font-medium {status ===
-						'loading'
-							? 'border-line bg-surface text-muted'
-							: 'border-transparent bg-primary text-on-primary'}"
-					>
-						{#if status === 'loading'}
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								class="animate-spin"
+						<div class="flex flex-col divide-y divide-line border-t border-b border-line">
+							<a
+								href="mailto:{profile.links.email}"
+								rel="external"
+								class="flex min-h-[48px] items-center justify-between gap-4 py-3 font-mono text-xs text-ink transition-colors duration-200 hover:text-primary"
 							>
-								<path d="M12 3a9 9 0 1 0 9 9" />
-							</svg>
-							Mengirim...
-						{:else}
-							Kirim pesan
-						{/if}
-					</button>
+								<span class="text-muted">Email</span>
+								<span class="text-primary">{profile.links.email}</span>
+							</a>
+							<a
+								href={profile.links.discord}
+								target="_blank"
+								rel="external noopener noreferrer"
+								class="flex min-h-[48px] items-center justify-between gap-4 py-3 font-mono text-xs text-ink transition-colors duration-200 hover:text-primary"
+							>
+								<span class="text-muted">Discord</span>
+								<span>discord.com/users/699924273040719955</span>
+							</a>
+							<a
+								href={profile.links.github}
+								target="_blank"
+								rel="external noopener noreferrer"
+								class="flex min-h-[48px] items-center justify-between gap-4 py-3 font-mono text-xs text-ink transition-colors duration-200 hover:text-primary"
+							>
+								<span class="text-muted">GitHub</span>
+								<span>github.com/Lemondeft</span>
+							</a>
+							<a
+								href={profile.links.blog}
+								target="_blank"
+								rel="external noopener noreferrer"
+								class="flex min-h-[48px] items-center justify-between gap-4 py-3 font-mono text-xs text-ink transition-colors duration-200 hover:text-primary"
+							>
+								<span class="text-muted">Blog</span>
+								<span>my-blog-lemondeft.vercel.app</span>
+							</a>
+						</div>
+					</div>
 
-					{#if status !== 'idle'}
-						<div class="flex items-center gap-3 border border-line px-4 py-3.5">
+					<form
+						use:reveal={120}
+						method="POST"
+						action="?/kirim"
+						use:enhance={() => {
+							status = 'loading';
+							return async ({ result, update }) => {
+								await update({ reset: result.type === 'success' });
+								status = result.type === 'success' ? 'success' : 'error';
+							};
+						}}
+						class="flex w-full flex-col gap-6"
+					>
+						<div class="flex flex-col gap-2">
+							<label for="kontak-nama" class="font-mono text-xs text-muted">Nama</label>
+							<input
+								id="kontak-nama"
+								name="nama"
+								required
+								autocomplete="name"
+								placeholder="Nama kamu"
+								class="h-12 w-full border border-control-line bg-surface px-4 text-sm text-ink transition-colors duration-200 placeholder:text-muted focus:border-primary focus:outline-2 focus:outline-offset-0 focus:outline-primary"
+							/>
+						</div>
+
+						<div class="flex flex-col gap-2">
+							<label for="kontak-email" class="font-mono text-xs text-muted">Email</label>
+							<input
+								id="kontak-email"
+								name="email"
+								type="email"
+								required
+								autocomplete="email"
+								placeholder="nama@email.com"
+								class="h-12 w-full border border-control-line bg-surface px-4 text-sm text-ink transition-colors duration-200 placeholder:text-muted focus:border-primary focus:outline-2 focus:outline-offset-0 focus:outline-primary"
+							/>
+						</div>
+
+						<div class="flex flex-col gap-2">
+							<label for="kontak-pesan" class="font-mono text-xs text-muted">Pesan</label>
+							<textarea
+								id="kontak-pesan"
+								name="pesan"
+								required
+								rows="5"
+								placeholder="Tulis pesan kamu di sini..."
+								class="min-h-[140px] w-full border border-control-line bg-surface px-4 py-3 text-sm text-ink transition-colors duration-200 placeholder:text-muted focus:border-primary focus:outline-2 focus:outline-offset-0 focus:outline-primary"
+							></textarea>
+						</div>
+
+						<button
+							type="submit"
+							disabled={status === 'loading'}
+							class="flex h-12 items-center justify-center gap-2 border px-6 text-sm font-medium transition-colors duration-200 {status ===
+							'loading'
+								? 'border-line bg-surface text-muted'
+								: 'border-transparent bg-primary text-on-primary hover:opacity-90'}"
+						>
 							{#if status === 'loading'}
 								<svg
 									width="16"
@@ -280,75 +494,127 @@
 									stroke="currentColor"
 									stroke-width="1.5"
 									stroke-linecap="round"
-									class="animate-spin text-muted"
+									aria-hidden="true"
+									class="animate-spin"
 								>
 									<path d="M12 3a9 9 0 1 0 9 9" />
 								</svg>
-								<span class="text-sm text-muted">Mengirim pesan...</span>
-							{:else if status === 'success'}
-								<svg
-									width="16"
-									height="16"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									class="text-success"
-								>
-									<path d="M20 6 9 17l-5-5" />
-								</svg>
-								<span class="text-sm text-success">Pesan terkirim. Terima kasih!</span>
+								<span>Mengirim...</span>
 							{:else}
-								<svg
-									width="16"
-									height="16"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									class="text-danger"
-								>
-									<circle cx="12" cy="12" r="9" />
-									<path d="M12 8v5M12 16.5v.01" />
-								</svg>
-								<span class="text-sm text-danger">Gagal mengirim. Coba lagi.</span>
+								<span>Kirim pesan</span>
+							{/if}
+						</button>
+
+						<div aria-live="polite">
+							{#if status !== 'idle'}
+								<div class="flex items-center gap-3 border border-line bg-surface px-4 py-3.5">
+									{#if status === 'loading'}
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+											aria-hidden="true"
+											class="animate-spin text-muted"
+										>
+											<path d="M12 3a9 9 0 1 0 9 9" />
+										</svg>
+										<span class="text-sm text-muted">Mengirim pesan lewat Resend...</span>
+									{:else if status === 'success'}
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+											class="text-success"
+										>
+											<path d="M20 6 9 17l-5-5" />
+										</svg>
+										<span class="text-sm text-success">Pesan terkirim. Terima kasih!</span>
+									{:else}
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+											class="text-danger"
+										>
+											<circle cx="12" cy="12" r="9" />
+											<path d="M12 8v5M12 16.5v.01" />
+										</svg>
+										<span class="text-sm text-danger">
+											{form?.pesan ?? 'Gagal mengirim pesan. Silakan coba lagi.'}
+										</span>
+									{/if}
+								</div>
 							{/if}
 						</div>
-					{/if}
-				</form>
+					</form>
+				</div>
 			</div>
-		</div>
-	</section>
+		</section>
+	</main>
 
-	<!-- footer -->
+	<!-- Footer -->
 	<footer class="border-t border-line">
-		<div class="mx-auto flex max-w-[1440px] flex-col gap-10 px-6 py-14 lg:px-24">
-			<p
-				class="max-w-[640px] text-[34px] leading-[1.05] font-medium tracking-[-0.6px] lg:text-[48px] lg:tracking-[-1.2px]"
-			>
-				Mari membangun sesuatu.
+		<div
+			class="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-14 lg:flex-row lg:items-center lg:justify-between lg:px-20 lg:py-20"
+		>
+			<p class="font-mono text-xs text-muted">
+				© 2026 {profile.name} (@{profile.handle})
 			</p>
 
-			<div
-				class="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6"
-			>
-				<a href="mailto:kamu@email.com" class="font-mono text-xs tracking-[1.1px] text-primary">
-					kamu@email.com
+			<div class="flex flex-wrap items-center gap-6">
+				<a
+					href="#proyek"
+					class="inline-flex min-h-[44px] items-center font-mono text-xs text-muted transition-colors duration-200 hover:text-primary"
+				>
+					Proyek
 				</a>
-				<div class="flex items-center gap-6">
-					<a href="#proyek" class="font-mono text-[11px] tracking-[1.1px] text-muted">PROYEK</a>
-					<a
-						href="https://github.com/nama-kamu"
-						class="font-mono text-[11px] tracking-[1.1px] text-muted">GITHUB</a
-					>
-					<a href="mailto:kamu@email.com" class="font-mono text-[11px] tracking-[1.1px] text-muted">
-						EMAIL
-					</a>
-				</div>
+				<a
+					href={profile.links.github}
+					target="_blank"
+					rel="external noopener noreferrer"
+					class="inline-flex min-h-[44px] items-center font-mono text-xs text-muted transition-colors duration-200 hover:text-primary"
+				>
+					GitHub
+				</a>
+				<a
+					href={profile.links.blog}
+					target="_blank"
+					rel="external noopener noreferrer"
+					class="inline-flex min-h-[44px] items-center font-mono text-xs text-muted transition-colors duration-200 hover:text-primary"
+				>
+					my-blog
+				</a>
+				<a
+					href={profile.links.discord}
+					target="_blank"
+					rel="external noopener noreferrer"
+					class="inline-flex min-h-[44px] items-center font-mono text-xs text-muted transition-colors duration-200 hover:text-primary"
+				>
+					Discord
+				</a>
+				<a
+					href="mailto:{profile.links.email}"
+					rel="external"
+					class="inline-flex min-h-[44px] items-center font-mono text-xs text-primary transition-colors duration-200 hover:underline"
+				>
+					{profile.links.email}
+				</a>
 			</div>
 		</div>
 	</footer>

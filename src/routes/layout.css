@@ -3,45 +3,115 @@
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/ibm-plex-mono/500.css';
 
-/* Tema gelap dikendalikan class, bukan setting OS. Tanpa baris ini, `dark:`
-   mengikuti laptop masing-masing peserta dan tombol tema tidak berpengaruh. */
+/* Tema gelap dikendalikan class agar toggle terang/gelap bekerja konsisten di semua perangkat */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-	--bg: #fcfcfa;
-	--surface: #f4f4f1;
-	--line: #e2e2dc;
-	--ink: #12120f;
-	--muted: #6b6b62;
-	--primary: #1d3fd1;
-	--on-primary: #fcfcfa;
-	--success: #047857;
+	--bg: #f7f9f6;
+	--surface: #eef2ec;
+	--surface-elevated: #e4eae1;
+	--line: #d2dad0;
+	--control-line: #758271;
+	--ink: #171a15;
+	--muted: #4a5347;
+	--primary: #3e5b41;
+	--on-primary: #f7f9f6;
+	--primary-soft: rgba(62, 91, 65, 0.08);
+	--success: #166534;
 	--danger: #b91c1c;
 }
 
 .dark {
-	--bg: #0c0c0b;
-	--surface: #161615;
-	--line: #2b2b27;
-	--ink: #edece4;
-	--muted: #9c9c90;
-	--primary: #8aa4ff;
-	--on-primary: #0c0c0b;
-	--success: #6ee7a0;
-	--danger: #fb8a8a;
+	--bg: #0a0a0a;
+	--surface: #121411;
+	--surface-elevated: #181b16;
+	--line: #252b23;
+	--control-line: #667863;
+	--ink: #eef3ee;
+	--muted: #a1afa1;
+	--primary: #9dc19e;
+	--on-primary: #0c100c;
+	--primary-soft: rgba(157, 193, 158, 0.11);
+	--success: #7fd49a;
+	--danger: #f08a8a;
 }
 
 @theme inline {
 	--color-bg: var(--bg);
 	--color-surface: var(--surface);
+	--color-surface-elevated: var(--surface-elevated);
 	--color-line: var(--line);
+	--color-control-line: var(--control-line);
 	--color-ink: var(--ink);
 	--color-muted: var(--muted);
 	--color-primary: var(--primary);
 	--color-on-primary: var(--on-primary);
+	--color-primary-soft: var(--primary-soft);
 	--color-success: var(--success);
 	--color-danger: var(--danger);
-	--font-sans: 'Geologica Variable', sans-serif;
-	--font-mono: 'IBM Plex Mono', monospace;
-	--radius-xs: 2px;
+	--font-sans: 'Orbitron', 'Geologica Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-display: 'Orbitron', 'Geologica Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'Space Mono', 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@layer base {
+	html {
+		background-color: var(--bg);
+		color: var(--ink);
+	}
+
+	body {
+		font-family: var(--font-sans);
+		line-height: 1.7;
+	}
+
+	a[href],
+	button:not(:disabled),
+	summary,
+	select,
+	label[for] {
+		cursor: pointer;
+	}
+
+	button:disabled,
+	input:disabled,
+	textarea:disabled {
+		cursor: not-allowed;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: 3px;
+	}
+}
+
+.reveal-pending {
+	opacity: 0;
+	transform: translateY(14px);
+}
+
+.reveal-visible {
+	opacity: 1;
+	transform: translateY(0);
+	transition:
+		opacity 380ms cubic-bezier(0.22, 1, 0.36, 1),
+		transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.reveal-pending,
+	.reveal-visible {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }
