@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { reveal } from '$lib/actions/reveal';
+	import { reveal, spotlight } from '$lib/actions/reveal';
 	import type { Project } from '$lib/data';
 
 	type Props = {
@@ -12,7 +12,8 @@
 
 <article
 	use:reveal={index * 60}
-	class="flex flex-col justify-between gap-8 py-10 lg:flex-row lg:items-start lg:gap-16 lg:py-14"
+	use:spotlight
+	class="flex flex-col justify-between gap-8 py-10 transition-colors duration-200 lg:flex-row lg:items-start lg:gap-16 lg:py-14"
 >
 	<div class="flex max-w-[62ch] flex-col gap-3.5">
 		<div class="flex flex-wrap items-center gap-3 font-mono text-xs text-muted">

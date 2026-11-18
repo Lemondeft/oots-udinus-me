@@ -17,7 +17,6 @@
 
 	let restartFn: (() => void) | undefined;
 
-	// Mulberry32 deterministic PRNG so every seed is 100% reproducible
 	function createRng(s: number) {
 		let a = s >>> 0;
 		return () => {
@@ -29,7 +28,6 @@
 		};
 	}
 
-	// Deterministic 2D value noise with smoothstep interpolation
 	function createNoise2D(s: number) {
 		const rng = createRng(s ^ 0x9e3779b9);
 		const perm = new Uint8Array(512);
@@ -70,8 +68,34 @@
 		};
 	}
 
+	function applyPreset(kind: 'wired' | 'vortex' | 'laminar') {
+		if (kind === 'wired') {
+			carrierCount = 1800;
+			flowSpeed = 1.5;
+			noiseScale = 0.004;
+			harmonicPull = 1.1;
+		} else if (kind === 'vortex') {
+			carrierCount = 2400;
+			flowSpeed = 2.1;
+			noiseScale = 0.007;
+			harmonicPull = 2.2;
+		} else {
+			carrierCount = 1400;
+			flowSpeed = 1.1;
+			noiseScale = 0.002;
+			harmonicPull = 0.3;
+		}
+	}
+
+	function exportPng() {
+		if (!canvas) return;
+		const link = document.createElement('a');
+		link.download = `wired-resonance-seed-${seed}.png`;
+		link.href = canvas.toDataURL('image/png');
+		link.click();
+	}
+
 	$effect(() => {
-		// Re-run cleanly when theme or parameters change
 		void theme;
 		void seed;
 		void carrierCount;
@@ -117,6 +141,22 @@
 		let attractors: Attractor[] = [];
 		let noise2d = createNoise2D(seed);
 		let inViewport = true;
+		const pointerForce = { x: W * 0.5, y: H * 0.5, active: false };
+
+		const onPointerMove = (event: PointerEvent) => {
+			if (!canvas) return;
+			const rect = canvas.getBoundingClientRect();
+			pointerForce.x = ((event.clientX - rect.left) / rect.width) * W;
+			pointerForce.y = ((event.clientY - rect.top) / rect.height) * H;
+			pointerForce.active = true;
+		};
+
+		const onPointerLeave = () => {
+			pointerForce.active = false;
+		};
+
+		canvas.addEventListener('pointermove', onPointerMove, { passive: true });
+		canvas.addEventListener('pointerleave', onPointerLeave, { passive: true });
 
 		const io = new IntersectionObserver(
 			(entries) => {
@@ -166,7 +206,6 @@
 
 			const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 			if (reduced) {
-				// Render pre-computed steps immediately when reduced motion is enabled
 				for (let s = 0; s < 90; s++) stepFrame();
 				return;
 			}
@@ -189,6 +228,18 @@
 					base = base + (swirl + Math.sin(d * 0.024 * a.freq) - base) * weight;
 				}
 			}
+
+			if (pointerForce.active) {
+				const dx = x - pointerForce.x;
+				const dy = y - pointerForce.y;
+				const d = Math.hypot(dx, dy);
+				if (d < 180) {
+					const cursorSwirl = Math.atan2(dy, dx) + Math.PI * 0.55;
+					const influence = (1 - d / 180) * 0.75;
+					base = base + (cursorSwirl - base) * influence;
+				}
+			}
+
 			return base;
 		};
 
@@ -246,6 +297,8 @@
 		return () => {
 			restartFn = undefined;
 			cancelAnimationFrame(rafId);
+			canvas?.removeEventListener('pointermove', onPointerMove);
+			canvas?.removeEventListener('pointerleave', onPointerLeave);
 			io.disconnect();
 		};
 	});
@@ -256,11 +309,13 @@
 		<canvas
 			bind:this={canvas}
 			aria-label="Kanvas seni algoritmik Wired Resonance berbasis medan vektor Perlin dan atraktor harmonik"
-			class="block aspect-[900/560] w-full"
+			class="block aspect-[900/560] w-full cursor-crosshair"
 		></canvas>
-		<div class="flex items-center justify-between gap-4 border-t border-line bg-bg px-4 py-2.5">
+		<div
+			class="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-bg px-4 py-2.5"
+		>
 			<span class="font-mono text-xs text-muted">wired resonance · seed #{seed}</span>
-			<div class="flex items-center gap-2">
+			<div class="flex flex-wrap items-center gap-2">
 				<button
 					type="button"
 					aria-pressed={paused}
@@ -276,6 +331,13 @@
 				>
 					Ulang
 				</button>
+				<button
+					type="button"
+					onclick={exportPng}
+					class="inline-flex min-h-[44px] items-center border border-primary bg-primary px-3.5 font-mono text-xs font-medium text-on-primary transition-opacity duration-200 hover:opacity-90"
+				>
+					Simpan PNG
+				</button>
 			</div>
 		</div>
 	</div>
@@ -284,8 +346,20 @@
 		<div class="flex flex-col gap-2">
 			<span class="font-mono text-xs text-primary">Seed &amp; Parameter</span>
 			<p class="text-sm leading-relaxed text-muted">
-				Setiap seed menghasilkan ulang seluruh medan vektor dan atraktor secara deterministik.
+				Gerakkan kursor di atas kanvas untuk membelokkan medan aliran, atau pilih preset di bawah.
 			</p>
+		</div>
+
+		<div class="flex flex-wrap gap-2">
+			{#each [['wired', 'Wired'], ['vortex', 'Vortex'], ['laminar', 'Laminar']] as [kind, label] (kind)}
+				<button
+					type="button"
+					onclick={() => applyPreset(kind as 'wired' | 'vortex' | 'laminar')}
+					class="inline-flex min-h-[44px] flex-1 items-center justify-center border border-line bg-bg px-3 font-mono text-xs text-muted transition-colors hover:border-primary hover:text-primary"
+				>
+					{label}
+				</button>
+			{/each}
 		</div>
 
 		<div class="flex items-center gap-2">

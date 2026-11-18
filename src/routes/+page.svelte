@@ -3,8 +3,9 @@
 	import { animate, scroll } from 'motion';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import { flashlight, reveal, springTap, tilt3d } from '$lib/actions/reveal';
+	import { flashlight, reveal, scrambleElement, springTap, tilt3d } from '$lib/actions/reveal';
 	import AlgorithmicArt from '$lib/components/AlgorithmicArt.svelte';
+	import CommandTerminal from '$lib/components/CommandTerminal.svelte';
 	import DailyDriver from '$lib/components/DailyDriver.svelte';
 	import Portrait3D from '$lib/components/Portrait3D.svelte';
 	import ProjectRow from '$lib/components/ProjectRow.svelte';
@@ -20,22 +21,65 @@
 	let theme: Theme = $state('dark');
 	let status: Status = $state('idle');
 	let menuOpen: boolean = $state(false);
+	let cmdOpen: boolean = $state(false);
 	let progressBar: HTMLDivElement | undefined = $state();
+	let heroHeading: HTMLHeadingElement | undefined = $state();
 	let bannerLight = $state({ x: 50, y: 50, active: false });
+	let hud = $state({ x: 0, y: 0, scrollPct: 0 });
+	let stopScramble: (() => void) | undefined;
+
+	function triggerWiredScramble() {
+		if (!heroHeading) return;
+		stopScramble?.();
+		stopScramble = scrambleElement(heroHeading, profile.name);
+	}
+
+	function navigateToSection(hash: string) {
+		const target = document.querySelector(hash);
+		target?.scrollIntoView({ behavior: 'smooth' });
+	}
 
 	$effect(() => {
 		document.documentElement.classList.toggle('dark', theme === 'dark');
 	});
 
 	onMount(() => {
-		if (!progressBar || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-		return scroll(animate(progressBar, { scaleX: [0, 1] }, { ease: 'linear' }));
+		const cleanups: Array<() => void> = [];
+
+		if (progressBar && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			cleanups.push(scroll(animate(progressBar, { scaleX: [0, 1] }, { ease: 'linear' })));
+		}
+
+		const updateScroll = () => {
+			const max = document.documentElement.scrollHeight - window.innerHeight;
+			hud.scrollPct = max > 0 ? Math.min(100, Math.round((window.scrollY / max) * 100)) : 0;
+		};
+		updateScroll();
+		window.addEventListener('scroll', updateScroll, { passive: true });
+		cleanups.push(() => window.removeEventListener('scroll', updateScroll));
+
+		return () => {
+			stopScramble?.();
+			for (const fn of cleanups) fn();
+		};
 	});
 </script>
 
 <svelte:window
 	onkeydown={(event) => {
-		if (event.key === 'Escape') menuOpen = false;
+		if (event.key === 'Escape') {
+			menuOpen = false;
+			cmdOpen = false;
+		}
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+			event.preventDefault();
+			cmdOpen = !cmdOpen;
+			menuOpen = false;
+		}
+	}}
+	onpointermove={(event) => {
+		hud.x = Math.round(event.clientX);
+		hud.y = Math.round(event.clientY);
 	}}
 />
 
@@ -74,6 +118,12 @@
 						Tentang
 					</a>
 					<a
+						href="#eksperimen"
+						class="inline-flex min-h-[44px] items-center text-sm text-muted transition-colors duration-200 hover:text-primary"
+					>
+						Eksperimen
+					</a>
+					<a
 						href="#kontak"
 						class="inline-flex min-h-[44px] items-center text-sm text-muted transition-colors duration-200 hover:text-primary"
 					>
@@ -88,6 +138,20 @@
 						my-blog
 					</a>
 				</nav>
+
+				<button
+					type="button"
+					aria-label="Buka terminal perintah"
+					onclick={() => {
+						cmdOpen = true;
+						menuOpen = false;
+					}}
+					class="inline-flex h-11 items-center gap-2 border border-control-line bg-surface px-3 font-mono text-xs text-ink transition-colors duration-200 hover:border-primary hover:text-primary"
+				>
+					<span class="text-primary">$</span>
+					<span class="hidden sm:inline">cmd</span>
+					<span class="hidden text-muted md:inline">Ctrl+K</span>
+				</button>
 
 				<button
 					type="button"
@@ -191,6 +255,13 @@
 					Tentang
 				</a>
 				<a
+					href="#eksperimen"
+					onclick={() => (menuOpen = false)}
+					class="flex min-h-[48px] items-center text-sm text-muted hover:text-primary"
+				>
+					Eksperimen
+				</a>
+				<a
 					href="#kontak"
 					onclick={() => (menuOpen = false)}
 					class="flex min-h-[48px] items-center text-sm text-muted hover:text-primary"
@@ -220,6 +291,7 @@
 					<p class="font-mono text-xs text-primary lg:text-sm">$ whoami</p>
 
 					<h1
+						bind:this={heroHeading}
 						class="font-display text-[clamp(2.25rem,5vw,4.25rem)] leading-[1.06] font-semibold tracking-tight text-ink"
 					>
 						{profile.name}
@@ -626,9 +698,14 @@
 		<div
 			class="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-14 lg:flex-row lg:items-center lg:justify-between lg:px-20 lg:py-20"
 		>
-			<p class="font-mono text-xs text-muted">
-				© 2026 {profile.name} (@{profile.handle})
-			</p>
+			<div class="flex flex-col gap-2">
+				<p class="font-mono text-xs text-muted">
+					© 2026 {profile.name} (@{profile.handle})
+				</p>
+				<p class="font-mono text-[11px] text-muted tabular-nums">
+					cursor: {hud.x}, {hud.y} · scroll: {hud.scrollPct}% · theme: {theme}
+				</p>
+			</div>
 
 			<div class="flex flex-wrap items-center gap-6">
 				<a
@@ -672,4 +749,13 @@
 			</div>
 		</div>
 	</footer>
+
+	<CommandTerminal
+		open={cmdOpen}
+		{theme}
+		onClose={() => (cmdOpen = false)}
+		onToggleTheme={() => (theme = theme === 'dark' ? 'light' : 'dark')}
+		onTriggerWired={triggerWiredScramble}
+		onNavigate={navigateToSection}
+	/>
 </div>

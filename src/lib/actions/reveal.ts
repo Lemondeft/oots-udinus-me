@@ -138,3 +138,70 @@ export function flashlight(
 		}
 	};
 }
+
+export function spotlight(node: HTMLElement) {
+	if (typeof window === 'undefined' || prefersReducedMotion()) {
+		return {};
+	}
+
+	const onMove = (event: PointerEvent) => {
+		const rect = node.getBoundingClientRect();
+		const x = event.clientX - rect.left;
+		const y = event.clientY - rect.top;
+		node.style.backgroundImage = `radial-gradient(360px circle at ${x}px ${y}px, var(--primary-soft), transparent 70%)`;
+	};
+
+	const onLeave = () => {
+		node.style.backgroundImage = '';
+	};
+
+	node.addEventListener('pointermove', onMove, { passive: true });
+	node.addEventListener('pointerleave', onLeave, { passive: true });
+
+	return {
+		destroy() {
+			node.removeEventListener('pointermove', onMove);
+			node.removeEventListener('pointerleave', onLeave);
+		}
+	};
+}
+
+const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#$%&*+';
+
+export function scrambleElement(node: HTMLElement, finalText: string) {
+	if (typeof window === 'undefined' || prefersReducedMotion()) {
+		node.textContent = finalText;
+		return () => {};
+	}
+
+	let frame = 0;
+	const totalFrames = 18;
+	let rafId = 0;
+
+	const tick = () => {
+		frame++;
+		const progress = frame / totalFrames;
+		const revealCount = Math.floor(progress * finalText.length);
+		let out = '';
+		for (let i = 0; i < finalText.length; i++) {
+			const ch = finalText[i];
+			if (ch === ' ' || i < revealCount) {
+				out += ch;
+			} else {
+				out += GLYPHS[(frame * 7 + i * 13) % GLYPHS.length];
+			}
+		}
+		node.textContent = out;
+		if (frame < totalFrames) {
+			rafId = requestAnimationFrame(tick);
+		} else {
+			node.textContent = finalText;
+		}
+	};
+
+	rafId = requestAnimationFrame(tick);
+	return () => {
+		cancelAnimationFrame(rafId);
+		node.textContent = finalText;
+	};
+}
