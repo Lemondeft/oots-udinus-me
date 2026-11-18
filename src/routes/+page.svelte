@@ -3,12 +3,20 @@
 	import { animate, scroll } from 'motion';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import { flashlight, reveal, scrambleElement, springTap, tilt3d } from '$lib/actions/reveal';
+	import {
+		flashlight,
+		reveal,
+		scrambleElement,
+		scrollDepth3d,
+		springTap,
+		tilt3d
+	} from '$lib/actions/reveal';
 	import AlgorithmicArt from '$lib/components/AlgorithmicArt.svelte';
 	import CommandTerminal from '$lib/components/CommandTerminal.svelte';
 	import DailyDriver from '$lib/components/DailyDriver.svelte';
 	import Portrait3D from '$lib/components/Portrait3D.svelte';
 	import ProjectRow from '$lib/components/ProjectRow.svelte';
+	import ScrollScene3D from '$lib/components/ScrollScene3D.svelte';
 	import WiredMesh from '$lib/components/WiredMesh.svelte';
 	import { profile, projects } from '$lib/data';
 	import type { PageProps } from './$types';
@@ -22,6 +30,7 @@
 	let status: Status = $state('idle');
 	let menuOpen: boolean = $state(false);
 	let cmdOpen: boolean = $state(false);
+	let scroll3d: boolean = $state(true);
 	let progressBar: HTMLDivElement | undefined = $state();
 	let heroHeading: HTMLHeadingElement | undefined = $state();
 	let bannerLight = $state({ x: 50, y: 50, active: false });
@@ -84,15 +93,18 @@
 />
 
 <div
-	class="min-h-dvh bg-bg text-ink transition-colors duration-200 {theme === 'dark' ? 'dark' : ''}"
+	class="relative min-h-dvh bg-bg text-ink transition-colors duration-200 {theme === 'dark'
+		? 'dark'
+		: ''}"
 >
+	<ScrollScene3D {theme} enabled={scroll3d} />
 	<div
 		bind:this={progressBar}
 		aria-hidden="true"
 		class="pointer-events-none fixed top-0 right-0 left-0 z-30 h-[2px] origin-left scale-x-0 bg-primary"
 	></div>
 	<!-- Navigasi -->
-	<header class="relative border-b border-line bg-bg">
+	<header class="relative z-10 border-b border-line bg-bg/90 backdrop-blur-xs">
 		<div
 			class="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6 lg:h-20 lg:px-20"
 		>
@@ -138,6 +150,18 @@
 						my-blog
 					</a>
 				</nav>
+
+				<button
+					type="button"
+					aria-label={scroll3d ? 'Jeda latar 3D scroll' : 'Putar latar 3D scroll'}
+					aria-pressed={scroll3d}
+					onclick={() => (scroll3d = !scroll3d)}
+					class="inline-flex h-11 items-center border px-3 font-mono text-xs transition-colors duration-200 {scroll3d
+						? 'border-primary bg-primary-soft text-primary'
+						: 'border-control-line bg-surface text-muted hover:text-ink'}"
+				>
+					3D
+				</button>
 
 				<button
 					type="button"
@@ -281,7 +305,7 @@
 		</nav>
 	</header>
 
-	<main>
+	<main class="relative z-10">
 		<!-- Hero -->
 		<section class="mx-auto max-w-[1280px] px-6 pt-20 pb-16 lg:px-20 lg:pt-32 lg:pb-24">
 			<div
@@ -352,7 +376,7 @@
 
 		<!-- Banner Lain (dipakai di tema gelap dan tema terang) -->
 		<section aria-label="Banner ilustrasi" class="border-t border-line">
-			<div class="mx-auto max-w-[1280px] px-6 py-12 lg:px-20 lg:py-20">
+			<div use:scrollDepth3d class="mx-auto max-w-[1280px] px-6 py-12 lg:px-20 lg:py-20">
 				<div
 					use:tilt3d={3.5}
 					use:flashlight={(next) => (bannerLight = next)}
@@ -694,7 +718,7 @@
 	</main>
 
 	<!-- Footer -->
-	<footer class="border-t border-line">
+	<footer class="relative z-10 border-t border-line bg-bg/90">
 		<div
 			class="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-14 lg:flex-row lg:items-center lg:justify-between lg:px-20 lg:py-20"
 		>

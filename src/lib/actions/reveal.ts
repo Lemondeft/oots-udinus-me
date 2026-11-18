@@ -1,4 +1,4 @@
-import { animate, hover, inView, press } from 'motion';
+import { animate, hover, inView, press, scroll } from 'motion';
 
 function prefersReducedMotion(): boolean {
 	return (
@@ -203,5 +203,37 @@ export function scrambleElement(node: HTMLElement, finalText: string) {
 	return () => {
 		cancelAnimationFrame(rafId);
 		node.textContent = finalText;
+	};
+}
+
+export function scrollDepth3d(node: HTMLElement) {
+	if (typeof window === 'undefined' || prefersReducedMotion()) {
+		return {};
+	}
+
+	node.style.transformStyle = 'preserve-3d';
+
+	const stop = scroll(
+		animate(
+			node,
+			{
+				transform: [
+					'perspective(1200px) rotateX(6deg) scale(0.97)',
+					'perspective(1200px) rotateX(0deg) scale(1)',
+					'perspective(1200px) rotateX(-4deg) scale(0.985)'
+				]
+			},
+			{ ease: 'linear' }
+		),
+		{
+			target: node,
+			offset: ['start end', 'center center', 'end start']
+		}
+	);
+
+	return {
+		destroy() {
+			stop();
+		}
 	};
 }

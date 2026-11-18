@@ -1,12 +1,18 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { BufferGeometry, LineBasicMaterial, MeshBasicMaterial, PointsMaterial } from 'three';
+	import type {
+		BufferGeometry,
+		LineBasicMaterial,
+		MeshBasicMaterial,
+		PointsMaterial,
+		ShaderMaterial
+	} from 'three';
 
 	type Props = {
 		theme: 'light' | 'dark';
 	};
 
-	type MeshShape = 'ico' | 'knot' | 'sphere';
+	type MeshShape = 'ico' | 'knot' | 'sphere' | 'shader';
 
 	let { theme }: Props = $props();
 
@@ -17,6 +23,7 @@
 	let webglSupported = $state(true);
 
 	let wireMat: MeshBasicMaterial | undefined;
+	let shaderMat: ShaderMaterial | undefined;
 	let innerMat: MeshBasicMaterial | undefined;
 	let ringMat: LineBasicMaterial | undefined;
 	let ring2Mat: LineBasicMaterial | undefined;
@@ -29,6 +36,10 @@
 	$effect(() => {
 		const isDark = theme === 'dark';
 		if (wireMat) wireMat.color.set(isDark ? 0x9dc19e : 0x3e5b41);
+		if (shaderMat) {
+			shaderMat.uniforms.uColorA.value.set(isDark ? 0x9dc19e : 0x3e5b41);
+			shaderMat.uniforms.uColorB.value.set(isDark ? 0xddf0e4 : 0x171a15);
+		}
 		if (innerMat) innerMat.color.set(isDark ? 0xddf0e4 : 0x171a15);
 		if (ringMat) ringMat.color.set(isDark ? 0x667863 : 0x758271);
 		if (ring2Mat) ring2Mat.color.set(isDark ? 0x9dc19e : 0x3e5b41);
@@ -81,6 +92,7 @@
 			const buildGeometry = (kind: MeshShape): BufferGeometry => {
 				if (kind === 'knot') return new THREE.TorusKnotGeometry(0.88, 0.28, 72, 12);
 				if (kind === 'sphere') return new THREE.SphereGeometry(1.22, 18, 12);
+				if (kind === 'shader') return new THREE.IcosahedronGeometry(1.18, 4);
 				return new THREE.IcosahedronGeometry(1.28, 1);
 			};
 
@@ -91,7 +103,40 @@
 				transparent: true,
 				opacity: 0.65
 			});
-			const mainMesh = new THREE.Mesh(mainGeo, wireMat);
+
+			// Custom GLSL vertex-displacement shader terinspirasi sinyal The Wired
+			shaderMat = new THREE.ShaderMaterial({
+				wireframe: true,
+				transparent: true,
+				uniforms: {
+					uTime: { value: 0 },
+					uHover: { value: 0 },
+					uColorA: { value: new THREE.Color(isDarkInit ? 0x9dc19e : 0x3e5b41) },
+					uColorB: { value: new THREE.Color(isDarkInit ? 0xddf0e4 : 0x171a15) }
+				},
+				vertexShader: `
+					uniform float uTime;
+					uniform float uHover;
+					varying float vWave;
+					void main() {
+						float wave = sin(position.x * 3.8 + uTime * 2.2) * cos(position.y * 3.4 - uTime * 1.7);
+						vWave = wave * 0.5 + 0.5;
+						vec3 displaced = position + normal * wave * (0.12 + uHover * 0.14);
+						gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
+					}
+				`,
+				fragmentShader: `
+					uniform vec3 uColorA;
+					uniform vec3 uColorB;
+					varying float vWave;
+					void main() {
+						vec3 col = mix(uColorA, uColorB, vWave);
+						gl_FragColor = vec4(col, 0.78);
+					}
+				`
+			});
+
+			const mainMesh = new THREE.Mesh(mainGeo, shape === 'shader' ? shaderMat : wireMat);
 			group.add(mainMesh);
 
 			const innerGeo = new THREE.OctahedronGeometry(0.56, 0);
@@ -130,7 +175,6 @@
 			ring2.rotation.y = -Math.PI * 0.38;
 			group.add(ring2);
 
-			// Cincin shockwave saat mesh diklik
 			pulseMat = new THREE.LineBasicMaterial({
 				color: isDarkInit ? 0xddf0e4 : 0x3e5b41,
 				transparent: true,
@@ -160,6 +204,9 @@
 			const points = new THREE.Points(pointsGeo, pointsMat);
 			group.add(points);
 
+			const raycaster = new THREE.Raycaster();
+			const pointerNDC = new THREE.Vector2();
+
 			const resize = () => {
 				if (!container) return;
 				const w = container.clientWidth || 320;
@@ -183,6 +230,7 @@
 			let velY = 0;
 			let pulseProgress = 1;
 			let spinBoost = 0;
+			let hoveringMesh = false;
 
 			const onPointerDown = (event: PointerEvent) => {
 				dragging = true;
@@ -192,6 +240,14 @@
 
 			const onPointerMove = (event: PointerEvent) => {
 				if (!container || paused) return;
+				const rect = container.getBoundingClientRect();
+				const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+				const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+
+				pointerNDC.set(nx, -ny);
+				raycaster.setFromCamera(pointerNDC, camera);
+				hoveringMesh = raycaster.intersectObject(mainMesh, false).length > 0;
+
 				if (dragging) {
 					const dx = event.clientX - lastX;
 					const dy = event.clientY - lastY;
@@ -203,9 +259,6 @@
 					mainMesh.rotation.x += velX;
 					return;
 				}
-				const rect = container.getBoundingClientRect();
-				const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-				const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1;
 				targetX = ny * 0.4;
 				targetY = nx * 0.5;
 			};
@@ -228,6 +281,9 @@
 				mainMesh.geometry.dispose();
 				mainMesh.geometry = nextGeo;
 				mainGeo = nextGeo;
+				if (wireMat && shaderMat) {
+					mainMesh.material = next === 'shader' ? shaderMat : wireMat;
+				}
 				renderer.render(scene, camera);
 			};
 
@@ -246,17 +302,28 @@
 			io.observe(container);
 
 			let rafId = 0;
-			let lastTime = performance.now();
+			const clock = new THREE.Clock();
 
-			const tick = (now: number) => {
+			const tick = () => {
 				rafId = requestAnimationFrame(tick);
-				const dt = Math.min((now - lastTime) / 1000, 0.05);
-				lastTime = now;
+				const dt = Math.min(clock.getDelta(), 0.05);
+				const elapsed = clock.elapsedTime;
 
 				if (!paused && inViewport) {
 					spinBoost *= 0.94;
 					velX *= 0.94;
 					velY *= 0.94;
+
+					if (shaderMat) {
+						shaderMat.uniforms.uTime.value = elapsed;
+						const targetHover = hoveringMesh ? 1 : 0;
+						shaderMat.uniforms.uHover.value +=
+							(targetHover - shaderMat.uniforms.uHover.value) * 0.1;
+					}
+
+					if (wireMat) {
+						wireMat.opacity = hoveringMesh ? 0.92 : 0.65;
+					}
 
 					mainMesh.rotation.y += dt * (0.28 + spinBoost) + velY;
 					mainMesh.rotation.x += dt * 0.14 + velX;
@@ -300,6 +367,7 @@
 				mainGeo.dispose();
 				innerGeo.dispose();
 				wireMat?.dispose();
+				shaderMat?.dispose();
 				innerMat?.dispose();
 				ringGeo.dispose();
 				ringMat?.dispose();
@@ -322,7 +390,7 @@
 	<div
 		bind:this={container}
 		aria-hidden="true"
-		title="Geser untuk memutar atau klik untuk denyut sinyal"
+		title="Geser untuk memutar, arahkan ke inti, atau klik untuk denyut sinyal"
 		class="relative aspect-square w-full cursor-grab overflow-hidden active:cursor-grabbing lg:aspect-[5/4]"
 	>
 		<canvas bind:this={canvas} class="block h-full w-full {webglSupported ? '' : 'hidden'}"
@@ -340,7 +408,7 @@
 		class="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-bg px-3.5 py-2.5"
 	>
 		<div class="flex items-center gap-1" role="group" aria-label="Bentuk objek 3D">
-			{#each [['ico', 'Ico'], ['knot', 'Knot'], ['sphere', 'Grid']] as [id, label] (id)}
+			{#each [['ico', 'Ico'], ['knot', 'Knot'], ['sphere', 'Grid'], ['shader', 'GLSL']] as [id, label] (id)}
 				<button
 					type="button"
 					aria-pressed={shape === id}
