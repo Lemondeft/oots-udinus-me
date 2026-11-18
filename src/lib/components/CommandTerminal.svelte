@@ -5,13 +5,16 @@
 	type Props = {
 		open: boolean;
 		theme: 'light' | 'dark';
+		crt: boolean;
 		onClose: () => void;
 		onToggleTheme: () => void;
+		onToggleCrt: () => void;
 		onTriggerWired: () => void;
 		onNavigate: (hash: string) => void;
 	};
 
-	let { open, theme, onClose, onToggleTheme, onTriggerWired, onNavigate }: Props = $props();
+	let { open, theme, crt, onClose, onToggleTheme, onToggleCrt, onTriggerWired, onNavigate }: Props =
+		$props();
 
 	type LogEntry = {
 		id: number;
@@ -29,8 +32,8 @@
 		{
 			id: 1,
 			lines: [
-				'wired-sh 2026.11 (lemondeft@fedora)',
-				'Ketik "help" atau klik pintasan di bawah untuk menjalankan perintah.'
+				'NAVI // Protocol 7 (navi@wired · fedora44)',
+				'Present day, present time. Ketik "help", "navi", atau "present".'
 			]
 		}
 	]);
@@ -66,15 +69,51 @@
 			pushLog({
 				command: trimmed,
 				lines: [
-					'Perintah tersedia:',
+					'Perintah NAVI tersedia:',
+					'  present     pesan Layer 01: Weird',
+					'  navi        status node Protocol 7 & koridor 3D',
 					'  whoami      profil singkat Ahmad Rizki Maulana',
 					'  neofetch    info lingkungan Fedora + Hyprland',
 					'  ls proyek   daftar 4 proyek pilihan',
+					'  crt         nyalakan / matikan garis scanline CRT',
 					'  theme       ganti mode gelap / terang',
 					'  wired       aktifkan efek glitch Wired pada judul',
 					'  goto <bagian>  lompat ke #proyek, #tentang, #eksperimen, #kontak',
 					'  clear       bersihkan terminal'
 				]
+			});
+			return;
+		}
+
+		if (cmd === 'present') {
+			pushLog({
+				command: trimmed,
+				accent: true,
+				lines: ['Present day, present time.', 'No matter where you go, everyone is connected.']
+			});
+			return;
+		}
+
+		if (cmd === 'navi') {
+			pushLog({
+				command: trimmed,
+				accent: true,
+				lines: [
+					'NAVI OS // Protocol 7',
+					'Layers      : LAYER:00 -> LAYER:05',
+					'3D Corridor : InstancedMesh + Overhead Wired Cables',
+					`CRT Filter  : ${crt ? 'Aktif' : 'Nonaktif'}`
+				]
+			});
+			return;
+		}
+
+		if (cmd === 'crt') {
+			onToggleCrt();
+			pushLog({
+				command: trimmed,
+				accent: true,
+				lines: [`Scanline CRT ${crt ? 'dimatikan' : 'diaktifkan'}.`]
 			});
 			return;
 		}
@@ -171,7 +210,7 @@
 		>
 			<div class="flex items-center justify-between border-b border-line bg-surface px-4 py-3">
 				<div class="flex items-center gap-2 font-mono text-xs text-primary">
-					<span>$ wired-sh</span>
+					<span>NAVI // Protocol 7</span>
 					<span class="text-muted">· Ctrl+K</span>
 				</div>
 				<button
@@ -200,7 +239,7 @@
 			</div>
 
 			<div class="flex flex-wrap gap-2 border-t border-line bg-surface px-4 py-3">
-				{#each ['whoami', 'neofetch', 'ls proyek', 'wired', 'theme', 'goto #eksperimen'] as quick (quick)}
+				{#each ['present', 'navi', 'neofetch', 'wired', 'crt', 'theme'] as quick (quick)}
 					<button
 						type="button"
 						onclick={() => runCommand(quick)}

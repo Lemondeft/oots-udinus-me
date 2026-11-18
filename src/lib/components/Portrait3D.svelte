@@ -72,7 +72,7 @@
 <div class="w-full max-w-[420px] lg:w-[420px] lg:shrink-0">
 	<div bind:this={frame} class="perspective-[900px]">
 		<div
-			class="relative aspect-square w-full border border-line bg-surface transition-shadow duration-300"
+			class="relative aspect-square w-full border border-line bg-surface"
 			style="transform: rotateX({rotX.toFixed(2)}deg) rotateY({rotY.toFixed(
 				2
 			)}deg); transform-style: preserve-3d; box-shadow: {(-rotY * 1.8).toFixed(1)}px {(

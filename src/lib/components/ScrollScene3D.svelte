@@ -12,6 +12,7 @@
 	let canvas: HTMLCanvasElement | undefined = $state();
 	let shardMat: MeshBasicMaterial | undefined;
 	let gateMat: LineBasicMaterial | undefined;
+	let cableMat: LineBasicMaterial | undefined;
 	let renderOnce: (() => void) | undefined;
 
 	$effect(() => {
@@ -23,6 +24,10 @@
 		if (gateMat) {
 			gateMat.color.set(isDark ? 0x667863 : 0x758271);
 			gateMat.opacity = isDark ? 0.16 : 0.09;
+		}
+		if (cableMat) {
+			cableMat.color.set(isDark ? 0x9dc19e : 0x3e5b41);
+			cableMat.opacity = isDark ? 0.24 : 0.14;
 		}
 		renderOnce?.();
 	});
@@ -136,6 +141,36 @@
 				gates.push(loop);
 			}
 
+			// Kabel tiang listrik di atas koridor Z (ikonik Serial Experiments Lain)
+			cableMat = new THREE.LineBasicMaterial({
+				color: isDarkInit ? 0x9dc19e : 0x3e5b41,
+				transparent: true,
+				opacity: isDarkInit ? 0.24 : 0.14
+			});
+			const cableGeos: Array<InstanceType<typeof THREE.BufferGeometry>> = [];
+			const cableConfigs = [
+				{ x: -3.2, y: 2.3, sag: 0.45 },
+				{ x: -2.4, y: 2.75, sag: 0.55 },
+				{ x: 2.5, y: 2.65, sag: 0.52 },
+				{ x: 3.4, y: 2.2, sag: 0.42 }
+			];
+			for (const cfg of cableConfigs) {
+				const pts = [];
+				for (let span = 0; span < 6; span++) {
+					const zStart = 6 - span * 10;
+					const zEnd = zStart - 10;
+					for (let s = 0; s <= 12; s++) {
+						const t = s / 12;
+						const z = zStart + (zEnd - zStart) * t;
+						const drop = Math.sin(t * Math.PI) * cfg.sag;
+						pts.push(new THREE.Vector3(cfg.x, cfg.y - drop, z));
+					}
+				}
+				const cGeo = new THREE.BufferGeometry().setFromPoints(pts);
+				cableGeos.push(cGeo);
+				scene.add(new THREE.Line(cGeo, cableMat));
+			}
+
 			let scrollNorm = 0;
 			let smoothScroll = 0;
 			let pointerX = 0;
@@ -228,6 +263,8 @@
 				shardMat?.dispose();
 				gateGeo.dispose();
 				gateMat?.dispose();
+				for (const g of cableGeos) g.dispose();
+				cableMat?.dispose();
 				shards.dispose();
 				renderer.dispose();
 			};

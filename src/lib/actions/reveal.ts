@@ -77,23 +77,52 @@ export function tilt3d(node: HTMLElement, maxDeg = 6) {
 	node.style.transformStyle = 'preserve-3d';
 	node.style.willChange = 'transform';
 
+	let rotX = 0;
+	let rotY = 0;
+	let targetX = 0;
+	let targetY = 0;
+	let rafId = 0;
+
+	const tick = () => {
+		rotX += (targetX - rotX) * 0.14;
+		rotY += (targetY - rotY) * 0.14;
+		node.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+
+		if (
+			Math.abs(targetX - rotX) > 0.02 ||
+			Math.abs(targetY - rotY) > 0.02 ||
+			Math.abs(rotX) > 0.02 ||
+			Math.abs(rotY) > 0.02
+		) {
+			rafId = requestAnimationFrame(tick);
+		} else {
+			rafId = 0;
+			if (targetX === 0 && targetY === 0) {
+				node.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+			}
+		}
+	};
+
+	const ensureTick = () => {
+		if (!rafId) {
+			rafId = requestAnimationFrame(tick);
+		}
+	};
+
 	const onMove = (event: PointerEvent) => {
 		const rect = node.getBoundingClientRect();
+		if (rect.width <= 0 || rect.height <= 0) return;
 		const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
 		const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1;
-		const rotX = -ny * maxDeg;
-		const rotY = nx * maxDeg;
-		node.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) scale3d(1.01, 1.01, 1.01)`;
+		targetX = -ny * maxDeg;
+		targetY = nx * maxDeg;
+		ensureTick();
 	};
 
 	const onLeave = () => {
-		animate(
-			node,
-			{
-				transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)'
-			},
-			{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }
-		);
+		targetX = 0;
+		targetY = 0;
+		ensureTick();
 	};
 
 	node.addEventListener('pointermove', onMove, { passive: true });
@@ -101,6 +130,7 @@ export function tilt3d(node: HTMLElement, maxDeg = 6) {
 
 	return {
 		destroy() {
+			if (rafId) cancelAnimationFrame(rafId);
 			node.removeEventListener('pointermove', onMove);
 			node.removeEventListener('pointerleave', onLeave);
 		}

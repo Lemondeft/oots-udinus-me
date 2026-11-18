@@ -3,15 +3,9 @@
 	import { animate, scroll } from 'motion';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import {
-		flashlight,
-		reveal,
-		scrambleElement,
-		scrollDepth3d,
-		springTap,
-		tilt3d
-	} from '$lib/actions/reveal';
+	import { reveal, scrambleElement, springTap, tilt3d } from '$lib/actions/reveal';
 	import AlgorithmicArt from '$lib/components/AlgorithmicArt.svelte';
+	import BannerLain from '$lib/components/BannerLain.svelte';
 	import CommandTerminal from '$lib/components/CommandTerminal.svelte';
 	import DailyDriver from '$lib/components/DailyDriver.svelte';
 	import Portrait3D from '$lib/components/Portrait3D.svelte';
@@ -31,9 +25,9 @@
 	let menuOpen: boolean = $state(false);
 	let cmdOpen: boolean = $state(false);
 	let scroll3d: boolean = $state(true);
+	let crtEnabled: boolean = $state(true);
 	let progressBar: HTMLDivElement | undefined = $state();
 	let heroHeading: HTMLHeadingElement | undefined = $state();
-	let bannerLight = $state({ x: 50, y: 50, active: false });
 	let hud = $state({ x: 0, y: 0, scrollPct: 0 });
 	let stopScramble: (() => void) | undefined;
 
@@ -98,6 +92,13 @@
 		: ''}"
 >
 	<ScrollScene3D {theme} enabled={scroll3d} />
+	{#if crtEnabled}
+		<div
+			aria-hidden="true"
+			class="pointer-events-none fixed inset-0 z-40 opacity-[0.04] dark:opacity-[0.06]"
+			style="background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, currentColor 2px, currentColor 3px);"
+		></div>
+	{/if}
 	<div
 		bind:this={progressBar}
 		aria-hidden="true"
@@ -161,6 +162,18 @@
 						: 'border-control-line bg-surface text-muted hover:text-ink'}"
 				>
 					3D
+				</button>
+
+				<button
+					type="button"
+					aria-label={crtEnabled ? 'Matikan efek scanline CRT' : 'Aktifkan efek scanline CRT'}
+					aria-pressed={crtEnabled}
+					onclick={() => (crtEnabled = !crtEnabled)}
+					class="hidden h-11 items-center border px-3 font-mono text-xs transition-colors duration-200 sm:inline-flex {crtEnabled
+						? 'border-primary bg-primary-soft text-primary'
+						: 'border-control-line bg-surface text-muted hover:text-ink'}"
+				>
+					CRT
 				</button>
 
 				<button
@@ -301,6 +314,15 @@
 				>
 					Baca my-blog
 				</a>
+				<button
+					type="button"
+					aria-pressed={crtEnabled}
+					onclick={() => (crtEnabled = !crtEnabled)}
+					class="flex min-h-[48px] w-full items-center justify-between font-mono text-xs text-muted hover:text-primary"
+				>
+					<span>Scanline CRT</span>
+					<span class="text-primary">{crtEnabled ? 'ON' : 'OFF'}</span>
+				</button>
 			</div>
 		</nav>
 	</header>
@@ -312,7 +334,7 @@
 				class="grid grid-cols-1 items-center gap-14 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)] lg:gap-16"
 			>
 				<div class="flex min-w-0 flex-col gap-8 lg:gap-10">
-					<p class="font-mono text-xs text-primary lg:text-sm">$ whoami</p>
+					<p class="font-mono text-xs text-primary lg:text-sm">LAYER:00 · $ whoami</p>
 
 					<h1
 						bind:this={heroHeading}
@@ -376,34 +398,13 @@
 
 		<!-- Banner Lain (dipakai di tema gelap dan tema terang) -->
 		<section aria-label="Banner ilustrasi" class="border-t border-line">
-			<div use:scrollDepth3d class="mx-auto max-w-[1280px] px-6 py-12 lg:px-20 lg:py-20">
-				<div
-					use:tilt3d={3.5}
-					use:flashlight={(next) => (bannerLight = next)}
-					class="relative aspect-[3/1] w-full overflow-hidden border border-line bg-surface"
-				>
-					<img
-						src="/images/banner.jpg"
-						alt="Banner ilustrasi Serial Experiments Lain di dalam kereta"
-						width="734"
-						height="245"
-						fetchpriority="high"
-						class="h-full w-full object-cover"
-					/>
-					<div
-						aria-hidden="true"
-						class="pointer-events-none absolute inset-0 transition-opacity duration-300"
-						style="opacity: {bannerLight.active
-							? 1
-							: 0}; background: radial-gradient(280px circle at {bannerLight.x.toFixed(
-							1
-						)}% {bannerLight.y.toFixed(
-							1
-						)}%, rgba(221, 240, 228, 0.28), rgba(10, 10, 10, 0.35) 68%);"
-					></div>
-				</div>
+			<div class="mx-auto max-w-[1280px] px-6 py-12 lg:px-20 lg:py-20">
+				<BannerLain
+					src="/images/banner.jpg"
+					alt="Banner ilustrasi Serial Experiments Lain di dalam kereta"
+				/>
 				<p class="mt-4 font-mono text-xs text-muted">
-					banner · serial experiments lain · aksen palet sage &amp; lumut
+					LAYER:01 · banner · serial experiments lain · palet sage &amp; lumut
 				</p>
 			</div>
 		</section>
@@ -413,7 +414,7 @@
 			<div class="mx-auto max-w-[1280px] px-6 py-20 lg:px-20 lg:py-32">
 				<div use:reveal={0} class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 					<div class="flex flex-col gap-3">
-						<p class="font-mono text-xs text-primary">$ ls proyek</p>
+						<p class="font-mono text-xs text-primary">LAYER:02 · $ ls proyek</p>
 						<h2 class="font-display text-2xl font-semibold tracking-tight text-ink lg:text-4xl">
 							Proyek Pilihan
 						</h2>
@@ -443,7 +444,7 @@
 		<section id="tentang" class="border-t border-line">
 			<div class="mx-auto max-w-[1280px] px-6 py-20 lg:px-20 lg:py-32">
 				<div use:reveal={0} class="flex flex-col gap-3">
-					<p class="font-mono text-xs text-primary">$ cat tentang.md</p>
+					<p class="font-mono text-xs text-primary">LAYER:03 · $ cat tentang.md</p>
 					<h2 class="font-display text-2xl font-semibold tracking-tight text-ink lg:text-4xl">
 						Tentang &amp; Stack
 					</h2>
@@ -507,7 +508,7 @@
 		<section id="eksperimen" class="border-t border-line">
 			<div class="mx-auto max-w-[1280px] px-6 py-20 lg:px-20 lg:py-32">
 				<div use:reveal={0} class="flex flex-col gap-3">
-					<p class="font-mono text-xs text-primary">$ ./wired_resonance --seed</p>
+					<p class="font-mono text-xs text-primary">LAYER:04 · $ ./wired_resonance --seed</p>
 					<h2 class="font-display text-2xl font-semibold tracking-tight text-ink lg:text-4xl">
 						Seni Algoritmik
 					</h2>
@@ -523,7 +524,7 @@
 		<section id="kontak" class="border-t border-line">
 			<div class="mx-auto max-w-[1280px] px-6 py-20 lg:px-20 lg:py-32">
 				<div use:reveal={0} class="flex flex-col gap-3">
-					<p class="font-mono text-xs text-primary">$ ping {profile.handle}</p>
+					<p class="font-mono text-xs text-primary">LAYER:05 · $ ping {profile.handle}</p>
 					<h2 class="font-display text-2xl font-semibold tracking-tight text-ink lg:text-4xl">
 						Hubungi Saya
 					</h2>
@@ -777,8 +778,10 @@
 	<CommandTerminal
 		open={cmdOpen}
 		{theme}
+		crt={crtEnabled}
 		onClose={() => (cmdOpen = false)}
 		onToggleTheme={() => (theme = theme === 'dark' ? 'light' : 'dark')}
+		onToggleCrt={() => (crtEnabled = !crtEnabled)}
 		onTriggerWired={triggerWiredScramble}
 		onNavigate={navigateToSection}
 	/>
