@@ -267,3 +267,105 @@ export function scrollDepth3d(node: HTMLElement) {
 		}
 	};
 }
+
+export function magnetic(node: HTMLElement, strength = 6) {
+	if (
+		typeof window === 'undefined' ||
+		prefersReducedMotion() ||
+		!window.matchMedia('(pointer: fine)').matches
+	) {
+		return {};
+	}
+
+	node.dataset.magnetic = 'true';
+	node.style.willChange = 'transform';
+
+	let x = 0;
+	let y = 0;
+	let tx = 0;
+	let ty = 0;
+	let rafId = 0;
+
+	const tick = () => {
+		x += (tx - x) * 0.18;
+		y += (ty - y) * 0.18;
+		node.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
+
+		if (
+			Math.abs(tx - x) > 0.05 ||
+			Math.abs(ty - y) > 0.05 ||
+			Math.abs(x) > 0.05 ||
+			Math.abs(y) > 0.05
+		) {
+			rafId = requestAnimationFrame(tick);
+		} else {
+			rafId = 0;
+			if (tx === 0 && ty === 0) {
+				node.style.transform = '';
+			}
+		}
+	};
+
+	const ensureTick = () => {
+		if (!rafId) rafId = requestAnimationFrame(tick);
+	};
+
+	const onMove = (event: PointerEvent) => {
+		const rect = node.getBoundingClientRect();
+		if (rect.width <= 0 || rect.height <= 0) return;
+		const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+		const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+		tx = nx * strength;
+		ty = ny * strength;
+		ensureTick();
+	};
+
+	const onLeave = () => {
+		tx = 0;
+		ty = 0;
+		ensureTick();
+	};
+
+	node.addEventListener('pointermove', onMove, { passive: true });
+	node.addEventListener('pointerleave', onLeave, { passive: true });
+
+	return {
+		destroy() {
+			if (rafId) cancelAnimationFrame(rafId);
+			delete node.dataset.magnetic;
+			node.style.transform = '';
+			node.removeEventListener('pointermove', onMove);
+			node.removeEventListener('pointerleave', onLeave);
+		}
+	};
+}
+
+export function hoverScramble(node: HTMLElement, finalText: string) {
+	if (typeof window === 'undefined' || prefersReducedMotion()) {
+		return {};
+	}
+
+	let text = finalText;
+	let stop: (() => void) | undefined;
+	let cooldownUntil = 0;
+
+	const onEnter = () => {
+		const now = performance.now();
+		if (now < cooldownUntil) return;
+		cooldownUntil = now + 900;
+		stop?.();
+		stop = scrambleElement(node, text);
+	};
+
+	node.addEventListener('pointerenter', onEnter, { passive: true });
+
+	return {
+		update(nextText: string) {
+			text = nextText;
+		},
+		destroy() {
+			stop?.();
+			node.removeEventListener('pointerenter', onEnter);
+		}
+	};
+}

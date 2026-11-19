@@ -1,20 +1,33 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { profile, projects } from '$lib/data';
+	import { playConfirm, playTick } from '$lib/sound';
 
 	type Props = {
 		open: boolean;
 		theme: 'light' | 'dark';
 		crt: boolean;
+		sfx: boolean;
 		onClose: () => void;
 		onToggleTheme: () => void;
 		onToggleCrt: () => void;
+		onToggleSfx: () => void;
 		onTriggerWired: () => void;
 		onNavigate: (hash: string) => void;
 	};
 
-	let { open, theme, crt, onClose, onToggleTheme, onToggleCrt, onTriggerWired, onNavigate }: Props =
-		$props();
+	let {
+		open,
+		theme,
+		crt,
+		sfx,
+		onClose,
+		onToggleTheme,
+		onToggleCrt,
+		onToggleSfx,
+		onTriggerWired,
+		onNavigate
+	}: Props = $props();
 
 	type LogEntry = {
 		id: number;
@@ -23,9 +36,29 @@
 		accent?: boolean;
 	};
 
+	const COMMAND_LIST = [
+		'present',
+		'navi',
+		'whoami',
+		'neofetch',
+		'ls proyek',
+		'crt',
+		'sfx',
+		'theme',
+		'wired',
+		'goto #proyek',
+		'goto #tentang',
+		'goto #eksperimen',
+		'goto #kontak',
+		'clear',
+		'help'
+	];
+
 	let inputEl: HTMLInputElement | undefined = $state();
 	let logContainer: HTMLDivElement | undefined = $state();
 	let commandText = $state('');
+	let history: string[] = $state([]);
+	let historyIdx = $state(-1);
 	let nextId = 2;
 
 	let logs: LogEntry[] = $state([
@@ -33,7 +66,7 @@
 			id: 1,
 			lines: [
 				'NAVI // Protocol 7 (navi@wired · fedora44)',
-				'Present day, present time. Ketik "help", "navi", atau "present".'
+				'Present day, present time. Ketik "help", tekan Tab untuk autocomplete, atau panah atas untuk riwayat.'
 			]
 		}
 	]);
@@ -54,38 +87,77 @@
 		}
 	}
 
+	function handleInputKeydown(event: KeyboardEvent) {
+		if (event.key === 'ArrowUp') {
+			if (history.length === 0) return;
+			event.preventDefault();
+			const next = historyIdx < history.length - 1 ? historyIdx + 1 : historyIdx;
+			historyIdx = next;
+			commandText = history[history.length - 1 - next];
+			playTick(sfx);
+			return;
+		}
+
+		if (event.key === 'ArrowDown') {
+			if (historyIdx <= -1) return;
+			event.preventDefault();
+			const next = historyIdx - 1;
+			historyIdx = next;
+			commandText = next >= 0 ? history[history.length - 1 - next] : '';
+			playTick(sfx);
+			return;
+		}
+
+		if (event.key === 'Tab') {
+			const query = commandText.trim().toLowerCase();
+			if (!query) return;
+			const match = COMMAND_LIST.find((item) => item.startsWith(query));
+			if (match) {
+				event.preventDefault();
+				commandText = match;
+				playTick(sfx);
+			}
+		}
+	}
+
 	function runCommand(raw: string) {
 		const trimmed = raw.trim();
 		if (!trimmed) return;
 		const cmd = trimmed.toLowerCase();
+		history = [...history.slice(-24), trimmed];
+		historyIdx = -1;
 		commandText = '';
 
 		if (cmd === 'clear') {
 			logs = [];
+			playTick(sfx);
 			return;
 		}
 
 		if (cmd === 'help') {
+			playConfirm(sfx);
 			pushLog({
 				command: trimmed,
 				lines: [
 					'Perintah NAVI tersedia:',
-					'  present     pesan Layer 01: Weird',
-					'  navi        status node Protocol 7 & koridor 3D',
-					'  whoami      profil singkat Ahmad Rizki Maulana',
-					'  neofetch    info lingkungan Fedora + Hyprland',
-					'  ls proyek   daftar 4 proyek pilihan',
-					'  crt         nyalakan / matikan garis scanline CRT',
-					'  theme       ganti mode gelap / terang',
-					'  wired       aktifkan efek glitch Wired pada judul',
+					'  present        pesan Layer 01: Weird',
+					'  navi           status node Protocol 7 & koridor 3D',
+					'  whoami         profil singkat Ahmad Rizki Maulana',
+					'  neofetch       info lingkungan Fedora + Hyprland',
+					`  ls proyek      daftar ${projects.length} proyek pilihan`,
+					'  crt            nyalakan / matikan garis scanline CRT',
+					'  sfx            nyalakan / matikan audio synth NAVI',
+					'  theme          ganti mode gelap / terang',
+					'  wired          aktifkan efek glitch Wired pada judul',
 					'  goto <bagian>  lompat ke #proyek, #tentang, #eksperimen, #kontak',
-					'  clear       bersihkan terminal'
+					'  clear          bersihkan terminal'
 				]
 			});
 			return;
 		}
 
 		if (cmd === 'present') {
+			playConfirm(sfx);
 			pushLog({
 				command: trimmed,
 				accent: true,
@@ -95,6 +167,7 @@
 		}
 
 		if (cmd === 'navi') {
+			playConfirm(sfx);
 			pushLog({
 				command: trimmed,
 				accent: true,
@@ -102,7 +175,8 @@
 					'NAVI OS // Protocol 7',
 					'Layers      : LAYER:00 -> LAYER:05',
 					'3D Corridor : InstancedMesh + Overhead Wired Cables',
-					`CRT Filter  : ${crt ? 'Aktif' : 'Nonaktif'}`
+					`CRT Filter  : ${crt ? 'Aktif' : 'Nonaktif'}`,
+					`Audio Synth : ${sfx ? 'Aktif' : 'Nonaktif'}`
 				]
 			});
 			return;
@@ -118,7 +192,18 @@
 			return;
 		}
 
+		if (cmd === 'sfx') {
+			onToggleSfx();
+			pushLog({
+				command: trimmed,
+				accent: true,
+				lines: [`Audio synth NAVI ${sfx ? 'dimatikan' : 'diaktifkan'}.`]
+			});
+			return;
+		}
+
 		if (cmd === 'whoami') {
+			playConfirm(sfx);
 			pushLog({
 				command: trimmed,
 				accent: true,
@@ -132,6 +217,7 @@
 		}
 
 		if (cmd === 'neofetch') {
+			playConfirm(sfx);
 			pushLog({
 				command: trimmed,
 				accent: true,
@@ -146,6 +232,7 @@
 		}
 
 		if (cmd === 'ls' || cmd === 'ls proyek') {
+			playConfirm(sfx);
 			pushLog({
 				command: trimmed,
 				lines: projects.map((p) => `[${p.year}] ${p.title.padEnd(28, ' ')} ${p.stack.join(', ')}`)
@@ -164,6 +251,7 @@
 		}
 
 		if (cmd === 'wired') {
+			playConfirm(sfx);
 			onTriggerWired();
 			pushLog({
 				command: trimmed,
@@ -176,14 +264,16 @@
 		if (cmd.startsWith('goto ')) {
 			const target = cmd.slice(5).trim();
 			const hash = target.startsWith('#') ? target : `#${target}`;
-			const valid = ['#proyek', '#tentang', '#eksperimen', '#kontak'];
+			const valid = ['#hero', '#banner', '#proyek', '#tentang', '#eksperimen', '#kontak'];
 			if (valid.includes(hash)) {
+				playConfirm(sfx);
 				onNavigate(hash);
 				onClose();
 				return;
 			}
 		}
 
+		playTick(sfx);
 		pushLog({
 			command: trimmed,
 			lines: [`Perintah tidak dikenal: "${trimmed}". Ketik "help" untuk daftar perintah.`]
@@ -211,7 +301,7 @@
 			<div class="flex items-center justify-between border-b border-line bg-surface px-4 py-3">
 				<div class="flex items-center gap-2 font-mono text-xs text-primary">
 					<span>NAVI // Protocol 7</span>
-					<span class="text-muted">· Ctrl+K</span>
+					<span class="text-muted">· Ctrl+K atau /</span>
 				</div>
 				<button
 					type="button"
@@ -239,7 +329,7 @@
 			</div>
 
 			<div class="flex flex-wrap gap-2 border-t border-line bg-surface px-4 py-3">
-				{#each ['present', 'navi', 'neofetch', 'wired', 'crt', 'theme'] as quick (quick)}
+				{#each ['present', 'navi', 'neofetch', 'wired', 'crt', 'sfx', 'theme'] as quick (quick)}
 					<button
 						type="button"
 						onclick={() => runCommand(quick)}
@@ -262,6 +352,7 @@
 					id="wired-cmd-input"
 					bind:this={inputEl}
 					bind:value={commandText}
+					onkeydown={handleInputKeydown}
 					placeholder="ketik help, neofetch, wired, goto #proyek..."
 					autocomplete="off"
 					class="h-11 flex-1 bg-transparent px-2 font-mono text-xs text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-primary"

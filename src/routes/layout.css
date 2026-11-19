@@ -83,6 +83,17 @@
 		outline: 2px solid var(--primary);
 		outline-offset: 3px;
 	}
+
+	::selection {
+		background-color: var(--primary);
+		color: var(--on-primary);
+	}
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {
