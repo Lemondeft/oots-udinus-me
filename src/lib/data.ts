@@ -48,6 +48,14 @@ export const projects: Project[] = [
 		repoUrl: 'https://github.com/Lemondeft/my-apple-music-downloader',
 		noteUrl: 'https://my-blog-lemondeft.vercel.app/blog/apple-music',
 		noteLabel: 'Baca catatan'
+	},
+	{
+		title: 'lrc-align',
+		description:
+			'Forced aligner lirik per-kata untuk Enhanced LRC dan WLRC yang dibangun 100% dengan Rust tanpa Python atau FFmpeg, lengkap dengan antarmuka web notebook localhost, akselerasi GPU CUDA/Metal lewat Whisper, pratinjau karaoke real-time, dan embed lirik langsung ke file audio.',
+		stack: ['Rust', 'Whisper', 'CUDA', 'Web UI'],
+		year: 2026,
+		repoUrl: 'https://github.com/Lemondeft/lrc-align'
 	}
 ];
 
